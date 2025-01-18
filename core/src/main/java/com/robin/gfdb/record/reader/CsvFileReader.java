@@ -21,9 +21,8 @@ public class CsvFileReader extends AbstractFileReader{
     public CsvFileReader(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.CSV.getValue());
+        useBufferedReader=true;
     }
-
-
 
     @Override
     public Map<String, Object> pullNext() {
