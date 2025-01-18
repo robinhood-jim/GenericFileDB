@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2015,robinjim(robinjim@126.com)
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.robin.gfdb.storage;
+
+import com.robin.core.base.util.ResourceConst;
+import com.robin.core.compress.util.CompressDecoder;
+import com.robin.core.compress.util.CompressEncoder;
+import com.robin.core.fileaccess.meta.DataCollectionMeta;
+import com.robin.core.fileaccess.util.ResourceUtil;
+import org.springframework.util.ObjectUtils;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+/**
+ * abstract resource system access Utils (Local/Hdfs/ApacheVFS(including ftp sftp)/S3/Tencent cloud/aliyun)
+ */
+public abstract class AbstractFileSystem implements IFileSystem {
+	protected String identifier;
+	protected AbstractFileSystem(){
+
+	}
+
+	protected static BufferedReader getReaderByPath(String path, InputStream  in, String encode) throws IOException{
+		return new BufferedReader(new InputStreamReader(getInputStreamByPath(path,in),encode));
+	}
+	protected static InputStream getInputStreamByPath(String path, InputStream  in) throws IOException{
+		return CompressDecoder.getInputStreamByCompressType(path,in);
+	}
+	protected static BufferedWriter getWriterByPath(String path, OutputStream out, String encode) throws IOException{
+		return new BufferedWriter(new OutputStreamWriter(getOutputStreamByPath(path,out),encode));
+	}
+
+	protected static OutputStream wrapOutputStream(OutputStream outputStream){
+		OutputStream out;
+		if(outputStream instanceof  BufferedOutputStream){
+			out=outputStream;
+		}else{
+			out=new BufferedOutputStream(outputStream);
+		}
+		return out;
+	}
+	protected static InputStream wrapInputStream(InputStream instream){
+		InputStream in;
+		if(instream instanceof  BufferedInputStream){
+			in=instream;
+		}else{
+			in=new BufferedInputStream(instream);
+		}
+		return in;
+	}
+	protected static OutputStream getOutputStreamByPath(String path, OutputStream out) throws IOException{
+		return CompressEncoder.getOutputStreamByCompressType(path,out);
+	}
+
+	
+	@Override
+	public void init(DataCollectionMeta meta){
+
+	}
+	public void finishWrite(DataCollectionMeta meta,OutputStream outputStream) {
+
+	}
+	@Override
+	public String getIdentifier() {
+		return identifier;
+	}
+
+}
