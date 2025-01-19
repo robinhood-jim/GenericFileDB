@@ -1,6 +1,5 @@
 package com.robin.msf.service;
 
-import com.robin.core.base.dao.JdbcDao;
 import com.robin.core.base.dao.util.AnnotationRetriever;
 import com.robin.core.base.dao.util.PropertyFunction;
 import com.robin.core.base.exception.DAOException;
@@ -11,6 +10,7 @@ import com.robin.core.base.util.Const;
 import com.robin.core.query.util.PageQuery;
 import com.robin.core.sql.util.FilterCondition;
 import com.robin.core.sql.util.FilterConditionBuilder;
+import com.robin.msf.dao.GenericJdbcDao;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import jakarta.transaction.Transactional;
 import io.micronaut.transaction.annotation.ReadOnly;
 
 public class AbstractMicroautService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
-    protected JdbcDao jdbcDao;
+    protected GenericJdbcDao jdbcDao;
     protected Class<V> type;
     protected Class<P> pkType;
     protected Logger logger= LoggerFactory.getLogger(getClass());
@@ -54,9 +54,9 @@ public class AbstractMicroautService<V extends BaseObject,P extends Serializable
     @PostConstruct
     public void init(){
         if(entityContent!=null && entityContent.getJdbcDao()!=null && !entityContent.getJdbcDao().isEmpty()){
-            jdbcDao = applicationContext.getBean(JdbcDao.class, Qualifiers.byName(entityContent.getJdbcDao()));
+            jdbcDao = applicationContext.getBean(GenericJdbcDao.class, Qualifiers.byName(entityContent.getJdbcDao()));
         }else{
-            jdbcDao = applicationContext.getBean(JdbcDao.class);
+            jdbcDao = applicationContext.getBean(GenericJdbcDao.class);
         }
     }
 
