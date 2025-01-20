@@ -7,3 +7,6 @@
 
 
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+
+开发环境
+    JDK 11以上，maven 3.8

@@ -17,12 +17,18 @@ public class JsonFileReader extends AbstractFileReader{
     public JsonFileReader(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.JSON.getValue());
+        useBufferedReader=true;
     }
 
     @Override
     public void init() throws IOException {
         super.init();
-
+        jreader=new JsonReader(reader);
+        try{
+            jreader.beginArray();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
     }
 
     @Override

@@ -31,6 +31,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     //if using BufferedReader as input.only csv json format must set this to true
     protected boolean useBufferedReader=false;
+    protected boolean useRawInputStream=false;
     public AbstractFileReader(DataCollectionMeta colmeta,AbstractFileSystem fileSystem){
         this.colmeta=colmeta;
         this.fileSystem=fileSystem;
@@ -50,7 +51,11 @@ public abstract class AbstractFileReader implements IDataFileReader{
             this.reader = pair.getKey();
             this.inputStream = pair.getValue();
         }else{
-            this.inputStream=fileSystem.getInResourceByStream(colmeta,colmeta.getPath());
+            if(!useRawInputStream) {
+                this.inputStream = fileSystem.getInResourceByStream(colmeta, colmeta.getPath());
+            }else{
+                this.inputStream=fileSystem.getRawInputStream(colmeta,colmeta.getPath());
+            }
         }
     }
     @Override
