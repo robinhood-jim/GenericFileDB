@@ -26,7 +26,7 @@ import java.util.Map;
 import jakarta.transaction.Transactional;
 import io.micronaut.transaction.annotation.ReadOnly;
 
-public class AbstractMicroautService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
+public class AbstractService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
     protected GenericJdbcDao jdbcDao;
     protected Class<V> type;
     protected Class<P> pkType;
@@ -35,7 +35,7 @@ public class AbstractMicroautService<V extends BaseObject,P extends Serializable
 
     @Inject
     private ApplicationContext applicationContext;
-    public AbstractMicroautService(){
+    public AbstractService(){
         Type genericSuperClass = getClass().getGenericSuperclass();
         ParameterizedType parametrizedType;
         if (genericSuperClass instanceof ParameterizedType) {

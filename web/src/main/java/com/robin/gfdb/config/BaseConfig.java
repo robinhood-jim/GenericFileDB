@@ -8,6 +8,7 @@ import com.robin.msf.dao.GenericJdbcDao;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.annotation.Bean;
 
+import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.inject.qualifiers.Qualifiers;
@@ -20,12 +21,15 @@ import org.springframework.jdbc.support.lob.LobHandler;
 
 import javax.sql.DataSource;
 
+@Factory
 public class BaseConfig {
     @Value("${project.queryconfigpath}")
     private String queryConfigPath;
 
     @Inject
     private ApplicationContext applicationContext;
+
+
     @Singleton
     @Bean
     @Named("queryFactory")
@@ -59,6 +63,6 @@ public class BaseConfig {
     @Bean
     @Named("trans")
     public DataSourceTransactionManager getTranscationTrans(){
-        return new DataSourceTransactionManager(applicationContext.getBean(DataSource.class, Qualifiers.byName("source1")));
+        return new DataSourceTransactionManager(applicationContext.getBean(DataSource.class));
     }
 }

@@ -1,0 +1,37 @@
+micronaut:
+  application:
+    name: micronaut-back-service
+  server:
+    host: localhost
+    port: 8970
+  security:
+    authentication: bearer
+    redirect:
+      enable: false
+  session:
+    http:
+      redis:
+        enabled: true
+
+datasources:
+  default:
+    url: jdbc:mysql://localhost:3316/gfdb?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: root
+    driverClassName: com.mysql.jdbc.Driver
+
+
+project:
+  logger:
+    level: INFO
+    home: ./logs
+  queryconfigpath: classpath:queryConfig
+
+redis:
+  uri: redis://localhost:6379
+
+consul:
+  client:
+    registration:
+      enabled: true
+    defaultZone: 127.0.0.1:8500
