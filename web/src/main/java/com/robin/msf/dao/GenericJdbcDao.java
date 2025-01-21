@@ -32,4 +32,12 @@ public class GenericJdbcDao extends JdbcDao {
         setQueryFactory(queryFactory);
         setLobHandler(lobHandler);
     }
+
+    public ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
+
+    public String getSourceName() {
+        return sourceName;
+    }
 }

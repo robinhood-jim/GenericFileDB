@@ -50,9 +50,9 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
                 throw new IllegalStateException("class " + getClass() + " is not subtype of ParametrizedType.");
             }
         }
-        this.serviceType = ((Class) parametrizedType.getActualTypeArguments()[0]);
-        this.voType = ((Class) parametrizedType.getActualTypeArguments()[2]);
-        this.pkType = ((Class) parametrizedType.getActualTypeArguments()[3]);
+        this.serviceType = ((Class) parametrizedType.getActualTypeArguments()[2]);
+        this.voType = ((Class) parametrizedType.getActualTypeArguments()[0]);
+        this.pkType = ((Class) parametrizedType.getActualTypeArguments()[1]);
         try {
             if(!pkType.isAssignableFrom(String.class)) {
                 valueOfMethod = this.pkType.getMethod("valueOf", String.class);
@@ -93,7 +93,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     }
 
     protected Map<String, Object> doView(P id) {
-        Map<String, Object> retMap = new HashMap<String, Object>();
+        Map<String, Object> retMap = new HashMap<>();
         try {
             O object = service.getEntity(id);
             retMap = new HashMap<>();
@@ -107,7 +107,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     }
 
     protected Map<String, Object> doEdit(P id) {
-        Map<String, Object> retMap = new HashMap<String, Object>();
+        Map<String, Object> retMap = new HashMap<>();
         try {
             BaseObject object = service.getEntity(id);
             doAfterEdit(object, retMap);

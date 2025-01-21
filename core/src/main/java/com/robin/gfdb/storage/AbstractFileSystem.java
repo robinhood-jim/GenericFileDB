@@ -29,8 +29,9 @@ import java.nio.file.Paths;
 /**
  * abstract resource system access Utils (Local/Hdfs/ApacheVFS(including ftp sftp)/S3/Tencent cloud/aliyun)
  */
-public abstract class AbstractFileSystem implements IFileSystem {
+public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	protected String identifier;
+	protected ThreadLocal<DataCollectionMeta> metaLocal=new ThreadLocal<>();
 	protected AbstractFileSystem(){
 
 	}
@@ -67,12 +68,13 @@ public abstract class AbstractFileSystem implements IFileSystem {
 		return CompressEncoder.getOutputStreamByCompressType(path,out);
 	}
 
+
 	
 	@Override
 	public void init(DataCollectionMeta meta){
-
+		metaLocal.set(meta);
 	}
-	public void finishWrite(DataCollectionMeta meta,OutputStream outputStream) {
+	public void finishWrite(OutputStream outputStream) {
 
 	}
 	@Override
@@ -80,4 +82,8 @@ public abstract class AbstractFileSystem implements IFileSystem {
 		return identifier;
 	}
 
+	@Override
+	public void close() throws IOException {
+
+	}
 }

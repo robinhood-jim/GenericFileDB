@@ -67,9 +67,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
             inputStream.close();
         }
         PolandNotationUtil.freeMem();
-        if (fileSystem != null && (ApacheVfsFileSystem.class.isAssignableFrom(fileSystem.getClass()) && !ObjectUtils.isEmpty(colmeta.getResourceCfgMap().get(Const.ITERATOR_PROCESSID)))) {
-            ((ApacheVfsFileSystem) fileSystem).closeWithProcessId(colmeta.getResourceCfgMap().get(Const.ITERATOR_PROCESSID).toString());
-        }
+        fileSystem.close();
     }
     @Override
     public boolean hasNext() {

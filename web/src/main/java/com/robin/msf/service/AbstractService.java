@@ -10,12 +10,13 @@ import com.robin.core.base.util.Const;
 import com.robin.core.query.util.PageQuery;
 import com.robin.core.sql.util.FilterCondition;
 import com.robin.core.sql.util.FilterConditionBuilder;
+import com.robin.msf.bean.ApplicationContextHolder;
 import com.robin.msf.dao.GenericJdbcDao;
 import io.micronaut.inject.qualifiers.Qualifiers;
-import jakarta.inject.Inject;
+import io.micronaut.transaction.annotation.ReadOnly;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
@@ -23,8 +24,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import jakarta.transaction.Transactional;
-import io.micronaut.transaction.annotation.ReadOnly;
 
 public class AbstractService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
     protected GenericJdbcDao jdbcDao;
@@ -33,8 +32,7 @@ public class AbstractService<V extends BaseObject,P extends Serializable> implem
     protected Logger logger= LoggerFactory.getLogger(getClass());
     protected AnnotationRetriever.EntityContent entityContent;
 
-    @Inject
-    private ApplicationContext applicationContext;
+
     public AbstractService(){
         Type genericSuperClass = getClass().getGenericSuperclass();
         ParameterizedType parametrizedType;
@@ -54,9 +52,9 @@ public class AbstractService<V extends BaseObject,P extends Serializable> implem
     @PostConstruct
     public void init(){
         if(entityContent!=null && entityContent.getJdbcDao()!=null && !entityContent.getJdbcDao().isEmpty()){
-            jdbcDao = applicationContext.getBean(GenericJdbcDao.class, Qualifiers.byName(entityContent.getJdbcDao()));
+            jdbcDao = ApplicationContextHolder.getBean(GenericJdbcDao.class, Qualifiers.byName(entityContent.getJdbcDao()));
         }else{
-            jdbcDao = applicationContext.getBean(GenericJdbcDao.class);
+            jdbcDao = ApplicationContextHolder.getBean(GenericJdbcDao.class);
         }
     }
 

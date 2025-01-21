@@ -1,5 +1,6 @@
 package com.robin.gfdb.storage;
 
+import cn.hutool.core.io.FileUtil;
 import com.robin.core.base.util.Const;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import org.apache.commons.io.FileUtils;
@@ -7,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.net.URI;
+import java.util.List;
 
 public class LocalFileSystem extends AbstractFileSystem {
 	public LocalFileSystem(){
@@ -15,7 +17,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 
 
 	@Override
-    public Pair<BufferedReader,InputStream> getInResourceByReader(DataCollectionMeta meta, String resourcePath) throws IOException{
+    public Pair<BufferedReader,InputStream> getInResourceByReader(String resourcePath) throws IOException{
 		BufferedReader reader;
 		InputStream stream;
 
@@ -24,12 +26,12 @@ public class LocalFileSystem extends AbstractFileSystem {
 			throw new IOException("input file "+resourcePath+" does not exist!");
 		}
 		stream=FileUtils.openInputStream(file);
-		reader= getReaderByPath(getProcessPath(resourcePath), stream, meta.getEncode());
+		reader= getReaderByPath(getProcessPath(resourcePath), stream, metaLocal.get().getEncode());
 		return Pair.of(reader,stream);
 	}
 	
 	@Override
-    public Pair<BufferedWriter,OutputStream> getOutResourceByWriter(DataCollectionMeta meta, String resourcePath) throws IOException{
+    public Pair<BufferedWriter,OutputStream> getOutResourceByWriter(String resourcePath) throws IOException{
 		BufferedWriter writer;
 		OutputStream outputStream;
 		File file=new File(getProcessPath(resourcePath));
@@ -37,11 +39,11 @@ public class LocalFileSystem extends AbstractFileSystem {
 			FileUtils.forceDelete(file);
 		}
 		outputStream=FileUtils.openOutputStream(file);
-		writer= getWriterByPath(getProcessPath(resourcePath), outputStream, meta.getEncode());
+		writer= getWriterByPath(getProcessPath(resourcePath), outputStream, metaLocal.get().getEncode());
 		return Pair.of(writer,outputStream);
 	}
 	@Override
-    public OutputStream getOutResourceByStream(DataCollectionMeta meta, String resourcePath) throws IOException{
+    public OutputStream getOutResourceByStream(String resourcePath) throws IOException{
 		File file=new File(getProcessPath(resourcePath));
 		if(file.exists()){
 			FileUtils.forceDelete(file);
@@ -49,7 +51,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 		return getOutputStreamByPath(getProcessPath(resourcePath),FileUtils.openOutputStream(file));
 	}
 	@Override
-    public InputStream getInResourceByStream(DataCollectionMeta meta, String resourcePath) throws IOException{
+    public InputStream getInResourceByStream(String resourcePath) throws IOException{
 		File file=new File(getProcessPath(resourcePath));
 		if(!file.exists()){
 			throw new IOException("file "+resourcePath+" not exist!");
@@ -59,7 +61,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 	}
 
 	@Override
-	public OutputStream getRawOutputStream(DataCollectionMeta meta, String resourcePath) throws IOException {
+	public OutputStream getRawOutputStream(String resourcePath) throws IOException {
 		File file=new File(getProcessPath(resourcePath));
 		if(file.exists()){
 			FileUtils.forceDelete(file);
@@ -68,7 +70,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 	}
 
 	@Override
-	public InputStream getRawInputStream(DataCollectionMeta meta, String resourcePath) throws IOException {
+	public InputStream getRawInputStream(String resourcePath) throws IOException {
 		File file=new File(getProcessPath(resourcePath));
 		if(!file.exists()){
 			throw new IOException("file "+resourcePath+" not exist!");
@@ -77,13 +79,13 @@ public class LocalFileSystem extends AbstractFileSystem {
 	}
 
 	@Override
-	public boolean exists(DataCollectionMeta meta, String resourcePath) throws IOException {
+	public boolean exists(String resourcePath) throws IOException {
 		File file=new File(getProcessPath(resourcePath));
 		return file.exists();
 	}
 
 	@Override
-	public long getInputStreamSize(DataCollectionMeta meta, String resourcePath) throws IOException {
+	public long getInputStreamSize(String resourcePath) throws IOException {
 		File file=new File(getProcessPath(resourcePath));
 		if(!file.exists()){
 			throw new IOException("file "+resourcePath+" not exist!");
@@ -100,5 +102,15 @@ public class LocalFileSystem extends AbstractFileSystem {
 
 		}
 		return url;
+	}
+
+	@Override
+	public List<String> listPath(String sourcePath) {
+		return FileUtil.listFileNames(sourcePath);
+	}
+
+	@Override
+	public boolean isDirectory(String sourcePath) {
+		return FileUtil.isDirectory(new File(sourcePath));
 	}
 }
