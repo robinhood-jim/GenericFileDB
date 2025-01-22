@@ -1,6 +1,5 @@
 package com.robin.gfdb.cloud;
 
-import com.google.common.collect.MapMaker;
 import com.robin.core.base.util.Const;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.hdfs.HDFSProperty;
@@ -12,9 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Singleton HDFS FileSystem Accessor,using defaultName as key
@@ -52,7 +49,7 @@ public class HdfsFileSystem extends AbstractFileSystem {
 			throws IOException {
 		HDFSUtil util=hdfsLocal.get();
 		InputStream stream=util.getHDFSDataByRawInputStream(resourcePath);
-		return Pair.of(getReaderByPath(resourcePath, stream, metaLocal.get().getEncode()),stream);
+		return Pair.of(getReaderByPath(resourcePath, stream, colmeta.getEncode()),stream);
 	}
 	
 	@Override
@@ -66,7 +63,7 @@ public class HdfsFileSystem extends AbstractFileSystem {
 				util.delete(resourcePath);
 			}
 			outputStream=util.getHDFSRawOutputStream(resourcePath);
-			return Pair.of(getWriterByPath(resourcePath, outputStream, metaLocal.get().getEncode()),outputStream);
+			return Pair.of(getWriterByPath(resourcePath, outputStream, colmeta.getEncode()),outputStream);
 		}catch (Exception ex){
 			throw new IOException(ex);
 		}

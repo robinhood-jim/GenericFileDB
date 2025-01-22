@@ -60,13 +60,13 @@ public class BOSFileSystem extends AbstractCloudStorageFileSystem {
 
     @Override
     public boolean exists(String resourcePath) throws IOException {
-        return client.doesObjectExist(getBucketName(metaLocal.get()),resourcePath);
+        return client.doesObjectExist(getBucketName(colmeta),resourcePath);
     }
 
     @Override
     public long getInputStreamSize(String resourcePath) throws IOException {
         if(exists(resourcePath)){
-            BosObject object=client.getObject(getBucketName(metaLocal.get()),resourcePath);
+            BosObject object=client.getObject(getBucketName(colmeta),resourcePath);
             return object.getObjectMetadata().getContentLength();
         }
         return 0;
@@ -96,7 +96,7 @@ public class BOSFileSystem extends AbstractCloudStorageFileSystem {
 
     @Override
     protected OutputStream getOutputStream(String path) throws IOException {
-        return new BOSOutputStream(client,metaLocal.get(),bucketName, path);
+        return new BOSOutputStream(client, colmeta,bucketName, path);
     }
 
     public static class Builder{

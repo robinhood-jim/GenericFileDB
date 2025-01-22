@@ -2,7 +2,6 @@ package com.robin.gfdb.storage;
 
 import cn.hutool.core.io.FileUtil;
 import com.robin.core.base.util.Const;
-import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -26,7 +25,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 			throw new IOException("input file "+resourcePath+" does not exist!");
 		}
 		stream=FileUtils.openInputStream(file);
-		reader= getReaderByPath(getProcessPath(resourcePath), stream, metaLocal.get().getEncode());
+		reader= getReaderByPath(getProcessPath(resourcePath), stream, colmeta.getEncode());
 		return Pair.of(reader,stream);
 	}
 	
@@ -39,7 +38,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 			FileUtils.forceDelete(file);
 		}
 		outputStream=FileUtils.openOutputStream(file);
-		writer= getWriterByPath(getProcessPath(resourcePath), outputStream, metaLocal.get().getEncode());
+		writer= getWriterByPath(getProcessPath(resourcePath), outputStream, colmeta.getEncode());
 		return Pair.of(writer,outputStream);
 	}
 	@Override

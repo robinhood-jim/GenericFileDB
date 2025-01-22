@@ -30,13 +30,13 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
     @Override
     public synchronized Pair<BufferedReader, InputStream> getInResourceByReader(String resourcePath) throws IOException {
         InputStream inputStream = getInputStreamByConfig(resourcePath);
-        return Pair.of(getReaderByPath(resourcePath, inputStream, metaLocal.get().getEncode()), inputStream);
+        return Pair.of(getReaderByPath(resourcePath, inputStream, colmeta.getEncode()), inputStream);
     }
 
     @Override
     public synchronized Pair<BufferedWriter, OutputStream> getOutResourceByWriter(String resourcePath) throws IOException {
         OutputStream outputStream = getOutputStream(resourcePath);
-        return Pair.of(getWriterByPath(resourcePath, outputStream, metaLocal.get().getEncode()), outputStream);
+        return Pair.of(getWriterByPath(resourcePath, outputStream, colmeta.getEncode()), outputStream);
     }
 
     @Override
@@ -73,7 +73,7 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
     }
 
     protected InputStream getInputStreamByConfig(String path) {
-        return getObject(getBucketName(metaLocal.get()), path);
+        return getObject(getBucketName(colmeta), path);
     }
 
     protected String getBucketName(DataCollectionMeta meta) {

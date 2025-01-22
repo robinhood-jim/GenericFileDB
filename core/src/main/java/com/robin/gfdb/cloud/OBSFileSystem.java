@@ -58,13 +58,13 @@ public class OBSFileSystem extends AbstractCloudStorageFileSystem {
 
     @Override
     public boolean exists(String resourcePath) throws IOException {
-        return client.doesObjectExist(getBucketName(metaLocal.get()),resourcePath);
+        return client.doesObjectExist(getBucketName(colmeta),resourcePath);
     }
 
     @Override
     public long getInputStreamSize(String resourcePath) throws IOException {
         if(exists(resourcePath)){
-            ObsObject object=client.getObject(getBucketName(metaLocal.get()),resourcePath);
+            ObsObject object=client.getObject(getBucketName(colmeta),resourcePath);
             return object.getMetadata().getContentLength();
         }
         return 0;

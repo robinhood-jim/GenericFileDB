@@ -15,23 +15,18 @@
  */
 package com.robin.gfdb.storage;
 
-import com.robin.core.base.util.ResourceConst;
 import com.robin.core.compress.util.CompressDecoder;
 import com.robin.core.compress.util.CompressEncoder;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
-import com.robin.core.fileaccess.util.ResourceUtil;
-import org.springframework.util.ObjectUtils;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  * abstract resource system access Utils (Local/Hdfs/ApacheVFS(including ftp sftp)/S3/Tencent cloud/aliyun)
  */
 public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	protected String identifier;
-	protected ThreadLocal<DataCollectionMeta> metaLocal=new ThreadLocal<>();
+	protected DataCollectionMeta colmeta;
 	protected AbstractFileSystem(){
 
 	}
@@ -72,7 +67,7 @@ public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	
 	@Override
 	public void init(DataCollectionMeta meta){
-		metaLocal.set(meta);
+		this.colmeta=meta;
 	}
 	public void finishWrite(OutputStream outputStream) {
 

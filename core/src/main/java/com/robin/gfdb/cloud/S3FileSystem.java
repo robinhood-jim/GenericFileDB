@@ -70,12 +70,12 @@ public class S3FileSystem extends AbstractCloudStorageFileSystem {
 
     @Override
     public boolean exists(String resourcePath) throws IOException {
-        return AwsUtils.exists(client,getBucketName(metaLocal.get()),resourcePath);
+        return AwsUtils.exists(client,getBucketName(colmeta),resourcePath);
     }
 
     @Override
     public long getInputStreamSize(String resourcePath) throws IOException {
-        return AwsUtils.size(client,getBucketName(metaLocal.get()),resourcePath);
+        return AwsUtils.size(client,getBucketName(colmeta),resourcePath);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class S3FileSystem extends AbstractCloudStorageFileSystem {
 
     @Override
     protected synchronized OutputStream getOutputStream(String path) throws IOException {
-        return new S3OutputStream(client,metaLocal.get(),getBucketName(metaLocal.get()),path);
+        return new S3OutputStream(client, colmeta,getBucketName(colmeta),path);
     }
 
     @Override
