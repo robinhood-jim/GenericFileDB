@@ -37,6 +37,11 @@
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-client-core</artifactId>
+            <version>3.9.6</version>
+        </dependency>
 
     </dependencies>
 

@@ -17,6 +17,7 @@ import io.micronaut.http.annotation.*;
 import jakarta.inject.Inject;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller("/datacollection")
@@ -24,19 +25,24 @@ public class DataCollectionDefineController extends AbstractController<DataColle
     @Inject
     private FileStorageDefineService storageDefineService;
     private Gson gson= GsonUtil.getGson();
-
     @Post("/save")
     @Consumes
     @Produces
     public Map<String,Object> doSave(HttpRequest<?> request, @Body Map<String,Object> reqMap){
         try{
             Assert.notNull(reqMap.get("fields"));
-            Long id= service.doSaveCollection(reqMap);
-            return wrapObject(id);
+            return doSave(reqMap);
         }catch (WebException ex){
             return wrapError(ex);
         }
     }
+
+    @Override
+    protected void doBeforeAdd(DataCollectionDefine obj, Map<String, Object> retMap) {
+        List<Map<String,Object>> fields= (List<Map<String, Object>>) retMap.get("columnDefine");
+        obj.setFields(gson.toJson(fields));
+    }
+
     @Get("/view/{id}")
     public Map<String,Object> doView(HttpRequest<?> request, @PathVariable Long id){
         try {
@@ -52,6 +58,17 @@ public class DataCollectionDefineController extends AbstractController<DataColle
             return retMap;
         }catch (Exception ex){
             throw new WebException(ex);
+        }
+    }
+    @Post("/update")
+    @Consumes
+    @Produces
+    public Map<String,Object> doUpdate(HttpRequest<?> request, @Body Map<String,Object> reqMap){
+        try{
+            Assert.notNull(reqMap.get("id"));
+            return doUpdate(reqMap,Long.valueOf(reqMap.get("id").toString()));
+        }catch (WebException ex){
+            return wrapError(ex);
         }
     }
 

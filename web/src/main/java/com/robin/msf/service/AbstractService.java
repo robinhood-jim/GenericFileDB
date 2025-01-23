@@ -24,8 +24,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public class AbstractService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
+public abstract class AbstractService<V extends BaseObject,P extends Serializable> implements IBaseAnnotationJdbcService<V,P> {
     protected GenericJdbcDao jdbcDao;
     protected Class<V> type;
     protected Class<P> pkType;
@@ -294,6 +295,9 @@ public class AbstractService<V extends BaseObject,P extends Serializable> implem
             throw new ServiceException(ex);
         }
     }
+    protected Consumer<Map<String,Object>> doBeforeSave;
+
+
     @Override
     public int countByCondition(FilterCondition filterCondition) {
         return 0;
