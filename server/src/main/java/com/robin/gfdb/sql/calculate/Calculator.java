@@ -2,6 +2,7 @@ package com.robin.gfdb.sql.calculate;
 
 
 import com.robin.gfdb.sql.parser.CommSqlParser;
+import com.robin.gfdb.sql.parser.FieldValueVisitor;
 import com.robin.gfdb.sql.parser.SqlSegment;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,21 +31,24 @@ public class Calculator implements Closeable, Poolable {
     private Map<String,String> stringLiteralMap=new WeakHashMap<>();
     protected boolean busyTag=false;
     private Slot slot;
+    private FieldValueVisitor visitor;
 
 
 
     public Calculator(){
-
+        visitor=new FieldValueVisitor(this);
     }
     public Calculator(Slot slot){
         this.slot=slot;
+        visitor=new FieldValueVisitor(this);
     }
     public boolean doCompare(SqlNode node){
         SqlFunctions.doCompare(segment,this,node);
         return runValue;
     }
-    public boolean doCalculate(CommSqlParser.ValueParts valueParts){
-        return SqlFunctions.doCalculate(this,valueParts);
+    public boolean doCalculate(){
+        return visitor.doCalculate()!=null;
+        //return SqlFunctions.doCalculate(this,valueParts);
     }
     public boolean walkTree(SqlNode node){
         return SqlFunctions.walkTree(segment,this,node);

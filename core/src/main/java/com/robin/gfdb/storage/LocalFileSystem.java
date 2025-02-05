@@ -25,7 +25,7 @@ public class LocalFileSystem extends AbstractFileSystem {
 			throw new IOException("input file "+resourcePath+" does not exist!");
 		}
 		stream=FileUtils.openInputStream(file);
-		reader= getReaderByPath(getProcessPath(resourcePath), stream, colmeta.getEncode());
+		reader= getReaderByPath(getProcessPath(resourcePath), stream, charset);
 		return Pair.of(reader,stream);
 	}
 	

@@ -30,7 +30,7 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
     @Override
     public synchronized Pair<BufferedReader, InputStream> getInResourceByReader(String resourcePath) throws IOException {
         InputStream inputStream = getInputStreamByConfig(resourcePath);
-        return Pair.of(getReaderByPath(resourcePath, inputStream, colmeta.getEncode()), inputStream);
+        return Pair.of(getReaderByPath(resourcePath, inputStream, charset), inputStream);
     }
 
     @Override

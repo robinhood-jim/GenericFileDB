@@ -14,6 +14,6 @@ public class CalculatorCallable implements Callable<Boolean> {
     public Boolean call() throws Exception {
         calculator.setBusyTag(true);
 
-        return calculator.doCalculate(calculator.getValueParts());
+        return calculator.doCalculate();
     }
 }

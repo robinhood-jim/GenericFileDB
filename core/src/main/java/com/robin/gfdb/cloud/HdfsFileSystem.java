@@ -49,7 +49,7 @@ public class HdfsFileSystem extends AbstractFileSystem {
 			throws IOException {
 		HDFSUtil util=hdfsLocal.get();
 		InputStream stream=util.getHDFSDataByRawInputStream(resourcePath);
-		return Pair.of(getReaderByPath(resourcePath, stream, colmeta.getEncode()),stream);
+		return Pair.of(getReaderByPath(resourcePath, stream, charset),stream);
 	}
 	
 	@Override

@@ -18,8 +18,11 @@ package com.robin.gfdb.storage;
 import com.robin.core.compress.util.CompressDecoder;
 import com.robin.core.compress.util.CompressEncoder;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
+import org.springframework.util.ObjectUtils;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * abstract resource system access Utils (Local/Hdfs/ApacheVFS(including ftp sftp)/S3/Tencent cloud/aliyun)
@@ -27,11 +30,12 @@ import java.io.*;
 public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	protected String identifier;
 	protected DataCollectionMeta colmeta;
+	protected Charset charset= StandardCharsets.UTF_8;
 	protected AbstractFileSystem(){
 
 	}
 
-	protected static BufferedReader getReaderByPath(String path, InputStream  in, String encode) throws IOException{
+	protected static BufferedReader getReaderByPath(String path, InputStream  in, Charset encode) throws IOException{
 		return new BufferedReader(new InputStreamReader(getInputStreamByPath(path,in),encode));
 	}
 	protected static InputStream getInputStreamByPath(String path, InputStream  in) throws IOException{
@@ -68,6 +72,9 @@ public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	@Override
 	public void init(DataCollectionMeta meta){
 		this.colmeta=meta;
+		if(!ObjectUtils.isEmpty(colmeta.getEncode())){
+			charset=Charset.forName(colmeta.getEncode());
+		}
 	}
 	public void finishWrite(OutputStream outputStream) {
 
