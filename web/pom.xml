@@ -105,11 +105,6 @@
             <artifactId>gson</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
        
         <dependency>
             <groupId>junit</groupId>
@@ -204,10 +199,7 @@
             <artifactId>jakarta.transaction-api</artifactId>
             <version>2.0.1</version>
         </dependency>
-        <dependency>
-            <groupId>io.micronaut</groupId>
-            <artifactId>micronaut-core</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-http-client</artifactId>
@@ -267,14 +259,14 @@
             <groupId>io.micronaut.discovery</groupId>
             <artifactId>micronaut-discovery-client</artifactId>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>io.micronaut.security</groupId>
             <artifactId>micronaut-security-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>io.micronaut.security</groupId>
             <artifactId>micronaut-security-jwt</artifactId>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>io.micronaut.reactor</groupId>
             <artifactId>micronaut-reactor</artifactId>

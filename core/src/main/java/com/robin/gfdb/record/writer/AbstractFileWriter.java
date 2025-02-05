@@ -50,9 +50,9 @@ public abstract class AbstractFileWriter implements IDataFileWriter {
     public void initalize() throws IOException {
         if(outputStream==null){
             if(!useRawOutputStream) {
-                outputStream = fileSystem.getOutResourceByStream(colmeta, colmeta.getPath());
+                outputStream = fileSystem.getOutResourceByStream(colmeta.getPath());
             }else {
-                outputStream=fileSystem.getRawOutputStream(colmeta,colmeta.getPath());
+                outputStream=fileSystem.getRawOutputStream(colmeta.getPath());
             }
             if(useBufferedWriter) {
                 writer = new BufferedWriter(new OutputStreamWriter(outputStream));
@@ -84,7 +84,7 @@ public abstract class AbstractFileWriter implements IDataFileWriter {
         if(writer!=null){
             writer.close();
         }
-        fileSystem.finishWrite(colmeta,outputStream);
+        fileSystem.finishWrite(outputStream);
         if(outputStream!=null){
             outputStream.close();
         }

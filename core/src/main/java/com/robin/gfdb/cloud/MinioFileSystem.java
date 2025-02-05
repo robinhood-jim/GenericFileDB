@@ -85,20 +85,20 @@ public class MinioFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected synchronized OutputStream getOutputStream(DataCollectionMeta meta) throws IOException {
-        return new MinioOutputStream(new CustomMinioClient(client),meta,bucketName,meta.getPath(),region);
+    protected synchronized OutputStream getOutputStream(String path) throws IOException {
+        return new MinioOutputStream(new CustomMinioClient(client), colmeta,bucketName,path,region);
     }
 
 
 
     @Override
-    public boolean exists(DataCollectionMeta meta, String resourcePath) throws IOException {
-        return MinioUtils.exists(client,getBucketName(meta),resourcePath);
+    public boolean exists(String resourcePath) throws IOException {
+        return MinioUtils.exists(client,getBucketName(colmeta),resourcePath);
     }
 
     @Override
-    public long getInputStreamSize(DataCollectionMeta meta, String resourcePath) throws IOException {
-        return MinioUtils.size(client,getBucketName(meta),resourcePath);
+    public long getInputStreamSize(String resourcePath) throws IOException {
+        return MinioUtils.size(client,getBucketName(colmeta),resourcePath);
     }
 
     protected InputStream getObject(String bucketName,String objectName) {

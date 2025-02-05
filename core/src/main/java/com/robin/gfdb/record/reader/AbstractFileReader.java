@@ -47,14 +47,14 @@ public abstract class AbstractFileReader implements IDataFileReader{
     public void init() throws IOException {
         Assert.notNull(fileSystem,"FileSystem is missing");
         if(useBufferedReader){
-            Pair<BufferedReader, InputStream> pair = fileSystem.getInResourceByReader(colmeta, colmeta.getPath());
+            Pair<BufferedReader, InputStream> pair = fileSystem.getInResourceByReader(colmeta.getPath());
             this.reader = pair.getKey();
             this.inputStream = pair.getValue();
         }else{
             if(!useRawInputStream) {
-                this.inputStream = fileSystem.getInResourceByStream(colmeta, colmeta.getPath());
+                this.inputStream = fileSystem.getInResourceByStream(colmeta.getPath());
             }else{
-                this.inputStream=fileSystem.getRawInputStream(colmeta,colmeta.getPath());
+                this.inputStream=fileSystem.getRawInputStream(colmeta.getPath());
             }
         }
     }
@@ -67,9 +67,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
             inputStream.close();
         }
         PolandNotationUtil.freeMem();
-        if (fileSystem != null && (ApacheVfsFileSystem.class.isAssignableFrom(fileSystem.getClass()) && !ObjectUtils.isEmpty(colmeta.getResourceCfgMap().get(Const.ITERATOR_PROCESSID)))) {
-            ((ApacheVfsFileSystem) fileSystem).closeWithProcessId(colmeta.getResourceCfgMap().get(Const.ITERATOR_PROCESSID).toString());
-        }
+        fileSystem.close();
     }
     @Override
     public boolean hasNext() {

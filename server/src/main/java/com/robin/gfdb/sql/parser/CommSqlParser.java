@@ -72,7 +72,12 @@ public class CommSqlParser {
             segment.setTabAlias(tabAlias);
             SqlNodeList selectLists = sqlSelect.getSelectList();
             Map<Integer, Integer> newColumnPosMap = new HashMap<>();
-            List<ValueParts> columns = parseSelectColumn(segment, selectLists, newColumnPrefix, newColumnPosMap);
+            SelectFieldVisitor visitor=new SelectFieldVisitor(segment,newColumnPrefix,newColumnPosMap);
+            for(SqlNode node1:selectLists) {
+                node1.accept(visitor);
+            }
+            List<ValueParts> columns=visitor.getValueParts();
+            //List<ValueParts> columns = parseSelectColumn(segment, selectLists, newColumnPrefix, newColumnPosMap);
             List<SqlNode> groupNodes = sqlSelect.getGroup();
 
             segment.setGroupBy(groupNodes);
@@ -138,7 +143,13 @@ public class CommSqlParser {
             segment.setNewColumnPrefix(newColumnPrefix);
             SqlNodeList selectLists = sqlSelect.getSelectList();
             Map<Integer, Integer> newColumnPosMap = new HashMap<>();
-            List<ValueParts> columns = parseSelectColumn(segment, selectLists, newColumnPrefix, newColumnPosMap);
+            SelectFieldVisitor visitor=new SelectFieldVisitor(segment,newColumnPrefix,newColumnPosMap);
+            for(SqlNode node1:selectLists) {
+                node1.accept(visitor);
+            }
+            List<ValueParts> columns=visitor.getValueParts();
+
+            //List<ValueParts> columns = parseSelectColumn(segment, selectLists, newColumnPrefix, newColumnPosMap);
             segment.setSelectColumns(columns);
             segment.setWhereCause(sqlSelect.getWhere());
             segment.setNewColumnPosMap(newColumnPosMap);
@@ -204,7 +215,7 @@ public class CommSqlParser {
     private static List<ValueParts> parseSelectColumn(SqlSegment segment, SqlNodeList selectLists, String newColumnPrefix, Map<Integer, Integer> newColumnPosMap) {
         List<ValueParts> selectColumns = new ArrayList<>();
         for (SqlNode selected : selectLists) {
-            ValueParts valueParts = new ValueParts();
+            ValueParts valueParts = new ValueParts(selected);
             if (SqlKind.ALL.equals(selected.getKind())) {
                 segment.setIncludeAllOriginColumn(true);
             } else if (SqlKind.IDENTIFIER.equals(selected.getKind())) {
@@ -269,13 +280,13 @@ public class CommSqlParser {
         return selectColumns;
     }
 
-    private static void setAliasName(String newColumnPrefix, Map<Integer, Integer> newColumnPosMap, ValueParts valueParts) {
+    static void setAliasName(String newColumnPrefix, Map<Integer, Integer> newColumnPosMap, ValueParts valueParts) {
         if (ObjectUtils.isEmpty(valueParts.getAliasName())) {
             valueParts.setAliasName(returnDefaultNewColumn(newColumnPrefix, newColumnPosMap));
         }
     }
 
-    private static String returnDefaultNewColumn(String columnPrefix, Map<Integer, Integer> newColumnPosMap) {
+    static String returnDefaultNewColumn(String columnPrefix, Map<Integer, Integer> newColumnPosMap) {
         String newColumnName;
         if (!newColumnPosMap.containsKey(1)) {
             newColumnName = columnPrefix + "1";
@@ -287,7 +298,7 @@ public class CommSqlParser {
         return newColumnName;
     }
 
-    private static void parseCase(SqlCase selected, ValueParts valueParts) {
+    static void parseCase(SqlCase selected, ValueParts valueParts) {
         valueParts.setSqlKind(SqlKind.CASE);
         SqlCase sqlCase = selected;
         if (!CollectionUtils.isEmpty(sqlCase.getOperandList())) {
@@ -299,8 +310,7 @@ public class CommSqlParser {
                 SqlNode thenNode = sqlCase.getThenOperands().get(i);
 
                 List<SqlNode> whenParts = ((SqlBasicCall) whenNode).getOperandList();
-
-                ValueParts thenValue = new ValueParts();
+                ValueParts thenValue = new ValueParts(thenNode);
                 if (cmpColumn == null) {
                     cmpColumn = whenParts.get(0).toString();
                     valueParts.setIdentifyColumn(cmpColumn);
@@ -322,7 +332,7 @@ public class CommSqlParser {
                 caseMap.put(whenValue, thenValue);
             }
             if (sqlCase.getElseOperand() != null) {
-                ValueParts elsePars = new ValueParts();
+                ValueParts elsePars = new ValueParts(sqlCase.getElseOperand());
                 if (SqlKind.LITERAL.equals(sqlCase.getElseOperand().getKind())) {
                     elsePars.setConstantValue((SqlLiteral) sqlCase.getElseOperand());
                     valueParts.decideType((SqlLiteral) sqlCase.getElseOperand());
@@ -352,7 +362,7 @@ public class CommSqlParser {
                         SqlNode node = nodes.get(i);
                         String calculator = node.toString().replace(Quoting.BACK_TICK.string, "");
                         if (fourZeOper.matcher(calculator).find()) {
-                            ValueParts parts = new ValueParts();
+                            ValueParts parts = new ValueParts(node);
                             parts.setCalculator(node);
                             parts.setNodeString(node.toString());
                             parts.setAliasName(returnDefaultNewColumn(segment.getNewColumnPrefix(), segment.getNewColumnPosMap()));
@@ -360,7 +370,7 @@ public class CommSqlParser {
                             newColumns.add(parts);
                         } else if (SqlKind.FUNCTION.contains(node.getKind())) {
                             List<SqlNode> nodes1 = ((SqlBasicCall) node).getOperandList();
-                            ValueParts parts = new ValueParts();
+                            ValueParts parts = new ValueParts(node);
                             parts.setFunctionName(((SqlBasicCall) node).getOperator().getName().toLowerCase());
                             parts.setFunctionParams(nodes1);
                             parts.setSqlKind(node.getKind());
@@ -371,7 +381,7 @@ public class CommSqlParser {
                         }
                     }
                 }else{
-                    ValueParts parts = new ValueParts();
+                    ValueParts parts = new ValueParts(whereNode);
                     parts.setFunctionName(((SqlBasicCall) whereNode).getOperator().getName().toLowerCase());
                     parts.setFunctionParams(((SqlBasicCall) whereNode).getOperandList());
                     parts.setSqlKind(whereNode.getKind());
@@ -383,7 +393,7 @@ public class CommSqlParser {
         } else {
             String calculator = whereNode.toString().replace(Quoting.BACK_TICK.string, "");
             if (fourZeOper.matcher(calculator).find()) {
-                ValueParts parts = new ValueParts();
+                ValueParts parts = new ValueParts(whereNode);
                 parts.setCalculator(whereNode);
                 parts.setAliasName(returnDefaultNewColumn(segment.getNewColumnPrefix(), segment.getNewColumnPosMap()));
                 segment.getWhereColumns().add(parts);
@@ -407,7 +417,8 @@ public class CommSqlParser {
         private String nodeString;
         private Queue<String> polandQueue;
 
-        ValueParts() {
+        ValueParts(SqlNode node) {
+            this.node=node;
         }
 
         public void setNode(SqlNode node) {
@@ -421,6 +432,7 @@ public class CommSqlParser {
         }
 
         public void setCalculator(SqlNode node) {
+            this.node=node;
             this.nodeString = node.toString();
             this.calculator = node.toString().replace(Quoting.BACK_TICK.string, "").replaceAll("\\s+", "");
             this.sqlKind = SqlKind.LISTAGG;
@@ -456,7 +468,7 @@ public class CommSqlParser {
 
 
     public static void main(String[] args) {
-        String sql = "select a1,a3,(b2+b3)/c1,substr(c4,1,3),case c3 when 1 then 'A' when 2 then 'B' else 'C' end as tag1 from test where ((((a1+a2)+a9)/10>a3 and a4>a5) or a7 in (1,2,3)) or (not ((a3-a6)/a8<b1))";
+        String sql = "select a1 as d1,a3,(b2+b3)/c1+ABS(c2*2),substr(c4,1,3),case c3 when 1 then 'A' when 2 then 'B' else 'C' end as tag1 from test where ((((a1+a2)+a9)/10>a3 and a4>a5) or a7 in (1,2,3)) or (not ((a3-a6)/a8<b1))";
         String groupSql = "select max(a1),min(a2),sum(c1),c3 from test where ((a1+a2)*a9)/10>a3 group by c3 having sum(c1)>100 order by c3 desc,sum(c1) asc";
 
         DataCollectionMeta.Builder builder = new DataCollectionMeta.Builder();

@@ -1,6 +1,6 @@
 micronaut:
   application:
-    name: micronaut-back-service
+    name: gfdb-web
   server:
     host: localhost
     port: 8970
@@ -27,11 +27,16 @@ project:
     home: ./logs
   queryconfigpath: classpath:queryConfig
 
-redis:
-  uri: redis://localhost:6379
 
 consul:
   client:
     registration:
       enabled: true
     defaultZone: 127.0.0.1:8500
+logger:
+  config: logback.xml
+  levels:
+    com.robin: INFO
+    io.micronaut: INFO
+
+

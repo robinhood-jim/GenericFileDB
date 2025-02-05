@@ -126,6 +126,10 @@
             <artifactId>cglib-nodep</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+        </dependency>
 
         
         <dependency>
@@ -348,10 +352,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-memory-netty</artifactId>
             <version>${arrow.version}</version>
@@ -471,7 +471,6 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>apache-client</artifactId>
             <version>${aws.java.sdk.version}</version>
-            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -511,7 +510,6 @@
             <groupId>com.baidubce</groupId>
             <artifactId>bce-java-sdk</artifactId>
             <version>${bce.version}</version>
-            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.paho</groupId>
@@ -535,7 +533,6 @@
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
             <version>8.4.0</version>
-            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -551,7 +548,6 @@
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-storage</artifactId>
             <version>2.27.0</version>
-            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

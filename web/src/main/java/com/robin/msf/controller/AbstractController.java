@@ -50,9 +50,9 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
                 throw new IllegalStateException("class " + getClass() + " is not subtype of ParametrizedType.");
             }
         }
-        this.serviceType = ((Class) parametrizedType.getActualTypeArguments()[0]);
-        this.voType = ((Class) parametrizedType.getActualTypeArguments()[2]);
-        this.pkType = ((Class) parametrizedType.getActualTypeArguments()[3]);
+        this.serviceType = ((Class) parametrizedType.getActualTypeArguments()[2]);
+        this.voType = ((Class) parametrizedType.getActualTypeArguments()[0]);
+        this.pkType = ((Class) parametrizedType.getActualTypeArguments()[1]);
         try {
             if(!pkType.isAssignableFrom(String.class)) {
                 valueOfMethod = this.pkType.getMethod("valueOf", String.class);
@@ -68,6 +68,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     protected Map<String, Object> doSave(O obj) {
         Map<String, Object> retMap = new HashMap<>();
         try {
+            doBeforeAdd(obj,null);
             P pk=this.service.saveEntity(obj);
             constructRetMap(retMap);
             doAfterAdd(obj,pk, retMap);
@@ -82,6 +83,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
         try {
             O object=this.voType.newInstance();
             ConvertUtil.convertToModel(object,paramMap);
+            doBeforeAdd(object,paramMap);
             P pk=this.service.saveEntity(object);
             constructRetMap(retMap);
             doAfterAdd(object,pk, retMap);
@@ -93,8 +95,9 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     }
 
     protected Map<String, Object> doView(P id) {
-        Map<String, Object> retMap = new HashMap<String, Object>();
+        Map<String, Object> retMap = new HashMap<>();
         try {
+            doBeforeView(id,retMap);
             O object = service.getEntity(id);
             retMap = new HashMap<>();
             doAfterView(object, retMap);
@@ -107,9 +110,10 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     }
 
     protected Map<String, Object> doEdit(P id) {
-        Map<String, Object> retMap = new HashMap<String, Object>();
+        Map<String, Object> retMap = new HashMap<>();
         try {
-            BaseObject object = service.getEntity(id);
+            doBeforeEdit(id,retMap);
+            O object = service.getEntity(id);
             doAfterEdit(object, retMap);
             constructRetMap(retMap);
         } catch (Exception e) {
@@ -124,7 +128,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
         try {
             O originObj= this.voType.newInstance();
             ConvertUtil.convertToModel(originObj,paramMap);
-            updateWithOrigin(id, retMap, originObj);
+            updateWithOrigin(id,paramMap, retMap, originObj);
         } catch (Exception ex) {
             log.error("{0}", ex);
             wrapFailed(retMap, ex);
@@ -132,9 +136,10 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
         return retMap;
     }
 
-    private void updateWithOrigin(P id, Map<String, Object> retMap, O originObj) throws Exception {
+    private void updateWithOrigin(P id,Map<String,Object> inputMap, Map<String, Object> retMap, O originObj) throws Exception {
         O updateObj = service.getEntity(id);
         ConvertUtil.convertToModelForUpdate(updateObj, originObj);
+        doBeforeUpdate(updateObj,inputMap);
         service.updateEntity(updateObj);
         doAfterUpdate(updateObj, retMap);
         constructRetMap(retMap);
@@ -143,27 +148,39 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     protected Map<String, Object> doUpdate(O base,P id) {
         Map<String, Object> retMap = new HashMap<>();
         try {
-            updateWithOrigin(id, retMap, base);
+            updateWithOrigin(id,null, retMap, base);
         } catch (Exception ex) {
             log.error("{0}", ex);
             wrapFailed(retMap, ex);
         }
         return retMap;
     }
+    protected void doBeforeAdd(O obj,Map<String, Object> retMap){
 
-    protected void doAfterAdd(BaseObject obj,P pk, Map<String, Object> retMap) {
+    }
+    protected void doBeforeView(P pk,Map<String, Object> retMap){
+
+    }
+    protected void doBeforeEdit(P pk,Map<String, Object> retMap){
+
+    }
+    protected void doBeforeUpdate(O obj,Map<String, Object> retMap){
+
+    }
+
+    protected void doAfterAdd(O obj,P pk, Map<String, Object> retMap) {
         retMap.put("data",obj);
     }
 
-    protected void doAfterView(BaseObject obj, Map<String, Object> retMap) {
+    protected void doAfterView(O obj, Map<String, Object> retMap) {
         retMap.put("data", obj);
     }
 
-    protected void doAfterEdit(BaseObject obj, Map<String, Object> retMap) {
+    protected void doAfterEdit(O obj, Map<String, Object> retMap) {
         retMap.put("data", obj);
     }
 
-    protected void doAfterUpdate(BaseObject obj, Map<String, Object> retMap) {
+    protected void doAfterUpdate(O obj, Map<String, Object> retMap) {
     }
 
     protected void doAfterQuery(PageQuery query, Map<String, Object> retMap) {

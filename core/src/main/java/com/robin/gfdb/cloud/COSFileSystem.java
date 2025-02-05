@@ -72,14 +72,14 @@ public class COSFileSystem extends AbstractCloudStorageFileSystem {
 
 
     @Override
-    public boolean exists(DataCollectionMeta meta, String resourcePath) throws IOException {
-        return exists(getBucketName(meta),resourcePath);
+    public boolean exists(String resourcePath) throws IOException {
+        return exists(getBucketName(colmeta),resourcePath);
     }
 
     @Override
-    public long getInputStreamSize(DataCollectionMeta meta, String resourcePath) throws IOException {
-        if(exists(getBucketName(meta),resourcePath)){
-            ObjectMetadata metadata=cosClient.getObjectMetadata(getBucketName(meta),resourcePath);
+    public long getInputStreamSize(String resourcePath) throws IOException {
+        if(exists(getBucketName(colmeta),resourcePath)){
+            ObjectMetadata metadata=cosClient.getObjectMetadata(getBucketName(colmeta),resourcePath);
             if(!ObjectUtils.isEmpty(metadata)){
                 return metadata.getContentLength();
             }
@@ -139,8 +139,8 @@ public class COSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected OutputStream getOutputStream(DataCollectionMeta meta) throws IOException {
-        return new COSOutputStream(cosClient,meta,getBucketName(meta),meta.getPath(),regionName);
+    protected OutputStream getOutputStream(String path) throws IOException {
+        return new COSOutputStream(cosClient, colmeta,getBucketName(colmeta),path,regionName);
     }
 
     public static class Builder{

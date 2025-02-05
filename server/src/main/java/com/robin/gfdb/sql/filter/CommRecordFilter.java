@@ -5,14 +5,17 @@ import com.robin.core.base.exception.GenericException;
 import com.robin.gfdb.sql.calculate.Calculator;
 import com.robin.gfdb.sql.calculate.CalculatorCallable;
 import com.robin.gfdb.sql.calculate.CalculatorPool;
+import com.robin.gfdb.sql.calculate.SqlFunctions;
 import com.robin.gfdb.sql.parser.CommSqlParser;
 import com.robin.gfdb.sql.parser.SqlSegment;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -100,5 +103,33 @@ public class CommRecordFilter {
             caPool.close();
         }
     }
-
+    public static void doGroupAgg(String key,SqlSegment segment,Map<String,Object> inputMap,Map<String,Object> newRecord,Map<String,Map<String,Object>> groupByMap) {
+        Calculator calculator = null;
+        try {
+            for (int i = 0; i < segment.getSelectColumns().size(); i++) {
+                CommSqlParser.ValueParts parts = segment.getSelectColumns().get(i);
+                if (SqlKind.FUNCTION.contains(parts.getSqlKind())) {
+                    calculator = caPool.borrowObject();
+                    calculator.clear();
+                    calculator.setValueParts(segment.getSelectColumns().get(i));
+                    calculator.setInputRecord(inputMap);
+                    calculator.setSegment(segment);
+                    SqlFunctions.doAggregate(calculator, parts, key, groupByMap, newRecord);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (calculator != null) {
+                caPool.returnObject(calculator);
+            }
+        }
+    }
+    public static void appendByType(StringBuilder builder,Object value){
+        if(Timestamp.class.isAssignableFrom(value.getClass())){
+            builder.append(((Timestamp)value).getTime()).append("|");
+        }else {
+            builder.append(value).append("|");
+        }
+    }
 }
