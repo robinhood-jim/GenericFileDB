@@ -1,4 +1,4 @@
-package com.robin.msf.service;
+package com.robin.gfdb.core.service;
 
 import com.robin.core.base.dao.util.AnnotationRetriever;
 import com.robin.core.base.dao.util.PropertyFunction;
@@ -10,8 +10,9 @@ import com.robin.core.base.util.Const;
 import com.robin.core.query.util.PageQuery;
 import com.robin.core.sql.util.FilterCondition;
 import com.robin.core.sql.util.FilterConditionBuilder;
+import com.robin.gfdb.core.dao.GenericJdbcDao;
 import com.robin.msf.bean.ApplicationContextHolder;
-import com.robin.msf.dao.GenericJdbcDao;
+
 import io.micronaut.inject.qualifiers.Qualifiers;
 import io.micronaut.transaction.annotation.ReadOnly;
 import jakarta.transaction.Transactional;

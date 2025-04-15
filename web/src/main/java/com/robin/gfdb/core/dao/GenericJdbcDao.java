@@ -1,4 +1,4 @@
-package com.robin.msf.dao;
+package com.robin.gfdb.core.dao;
 
 import com.robin.core.base.dao.JdbcDao;
 import com.robin.core.query.util.QueryFactory;

@@ -1,11 +1,13 @@
-package com.robin.gfdb.meta.service;
+package com.robin.msf.service;
 
 import com.google.gson.Gson;
 import com.robin.core.base.exception.ServiceException;
 import com.robin.core.convert.util.ConvertUtil;
+import com.robin.gfdb.core.service.AbstractService;
+
+
 import com.robin.gfdb.meta.model.DataCollectionDefine;
-import com.robin.msf.json.GsonUtil;
-import com.robin.msf.service.AbstractService;
+import com.robin.gfdb.utils.json.GsonUtil;
 import jakarta.inject.Singleton;
 
 import javax.transaction.Transactional;

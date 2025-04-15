@@ -1,17 +1,15 @@
 package com.robin.gfdb.config;
 
-import com.robin.core.base.dao.JdbcDao;
 import com.robin.core.query.util.QueryFactory;
 import com.robin.core.sql.util.BaseSqlGen;
 import com.robin.core.sql.util.MysqlSqlGen;
-import com.robin.msf.dao.GenericJdbcDao;
+import com.robin.gfdb.core.dao.GenericJdbcDao;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.annotation.Bean;
 
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;
-import io.micronaut.inject.qualifiers.Qualifiers;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;

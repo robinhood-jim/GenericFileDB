@@ -5,11 +5,13 @@ import com.aliyun.oss.model.*;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.stream.ByteBufferInputStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.core.memory.MemorySegment;
 import org.springframework.util.ObjectUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +76,28 @@ public class OSSOutputStream extends AbstractUploadPartOutputStream {
                     request.setPartSize(byteSize);
                     request.setPartNumber(partNumber);
                     request.setInputStream(new ByteArrayInputStream(writeBytesRef.get()));
+                    UploadPartResult result = client.uploadPart(request);
+                    partETagMap.put(partNumber,result.getPartETag());
+                    return true;
+                } catch (Exception ex) {
+                    throw new IOException(ex);
+                }
+            }
+        }));
+    }
+
+    @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new AbstractUploadPartCallable(buffer,segment,partNumber,byteSize) {
+            @Override
+            protected boolean uploadPartAsync() throws IOException {
+                try {
+                    UploadPartRequest request = new UploadPartRequest();
+                    request.setUploadId(uploadId);
+                    request.setKey(path);
+                    request.setPartSize(byteSize);
+                    request.setPartNumber(partNumber);
+                    request.setInputStream(new ByteBufferInputStream(buffer,byteSize));
                     UploadPartResult result = client.uploadPart(request);
                     partETagMap.put(partNumber,result.getPartETag());
                     return true;

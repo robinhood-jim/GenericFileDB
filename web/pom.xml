@@ -31,7 +31,7 @@
     <dependencies>
         <!-- Apache commons start -->
         <dependency>
-            <groupId>com.robin</groupId>
+            <groupId>com.robin.gfdb</groupId>
             <artifactId>core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

@@ -2,12 +2,14 @@ package com.robin.gfdb.cloud.outputstream;
 
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.stream.ByteBufferInputStream;
+import org.apache.flink.core.memory.MemorySegment;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 
 public class S3OutputStream extends AbstractUploadPartOutputStream {
     private S3Client client;
@@ -71,6 +73,30 @@ public class S3OutputStream extends AbstractUploadPartOutputStream {
                             .contentLength((long) byteSize)
                             .build();
                     RequestBody requestBody = RequestBody.fromBytes(writeBytesRef.get());
+                    UploadPartResponse uploadPartResponse = client.uploadPart(uploadRequest, requestBody);
+                    etagsMap.put(partNumber,uploadPartResponse.eTag());
+                    return true;
+                }catch (Exception ex){
+                    throw new IOException(ex);
+                }
+            }
+        }));
+    }
+
+    @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new AbstractUploadPartCallable(buffer,segment,partNumber,byteSize) {
+            @Override
+            protected boolean uploadPartAsync() throws IOException {
+                try{
+                    UploadPartRequest uploadRequest = UploadPartRequest.builder()
+                            .bucket(bucketName)
+                            .key(path)
+                            .uploadId(uploadId)
+                            .partNumber(partNumber)
+                            .contentLength((long) byteSize)
+                            .build();
+                    RequestBody requestBody = RequestBody.fromInputStream(new ByteBufferInputStream(buffer,byteSize),byteSize);
                     UploadPartResponse uploadPartResponse = client.uploadPart(uploadRequest, requestBody);
                     etagsMap.put(partNumber,uploadPartResponse.eTag());
                     return true;

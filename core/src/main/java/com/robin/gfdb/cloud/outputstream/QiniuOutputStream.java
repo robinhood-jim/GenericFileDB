@@ -15,11 +15,13 @@ import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.stream.ByteBufferInputStream;
 import com.robin.gfdb.utils.json.GsonUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.core.memory.MemorySegment;
 import org.springframework.util.ObjectUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +90,11 @@ public class QiniuOutputStream extends AbstractUploadPartOutputStream {
     }
 
     @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new QiniuUploadPartCallable(buffer,segment,partNumber,byteSize,getToken())));
+    }
+
+    @Override
     protected String completeMultiUpload() throws IOException {
         ApiUploadV2CompleteUpload upload = new ApiUploadV2CompleteUpload(client);
         try {
@@ -146,13 +153,21 @@ public class QiniuOutputStream extends AbstractUploadPartOutputStream {
             super(content,partNumber,byteSize);
             this.token=token;
         }
+        public QiniuUploadPartCallable(ByteBuffer buffer, MemorySegment segment,int partNumber,int byteSize,String token){
+            super(buffer,segment,partNumber,byteSize);
+            this.token=token;
+        }
 
         @Override
         protected boolean uploadPartAsync() throws IOException {
             ApiUploadV2UploadPart part = new ApiUploadV2UploadPart(client);
             ApiUploadV2UploadPart.Request request = new ApiUploadV2UploadPart.Request(urlPrefix, token, uploadId, partNumber)
-                    .setKey(path)
-                    .setUploadData(content.get(), 0, byteSize, getContentType(meta));
+                    .setKey(path);
+            if(content!=null) {
+                request.setUploadData(content.get(), 0, byteSize, getContentType(meta));
+            }else{
+                request.setUploadData(new ByteBufferInputStream(buffer,byteSize),getContentType(meta),byteSize);
+            }
             try {
                 ApiUploadV2UploadPart.Response response = part.request(request);
                 etagsMap.put(partNumber, response.getEtag());
