@@ -127,12 +127,6 @@ public class COSOutputStream extends AbstractUploadPartOutputStream {
                     throw new IOException(ex);
                 }
             }
-
-            @Override
-            protected void free() {
-                buffer.clear();
-                segment.free();
-            }
         }));
     }
 
