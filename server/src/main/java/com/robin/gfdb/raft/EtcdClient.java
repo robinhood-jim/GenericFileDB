@@ -58,7 +58,7 @@ public class EtcdClient {
         try {
 
             long leaseId = leaseClient.grant(60, 60, TimeUnit.SECONDS).get().getID();
-            leaseClient.keepAlive(leaseId, new StreamObserver<LeaseKeepAliveResponse>() {
+            leaseClient.keepAlive(leaseId, new StreamObserver<>() {
                 @Override
                 public void onNext(LeaseKeepAliveResponse leaseKeepAliveResponse) {
                     log.debug(serverName+"refresh lease");

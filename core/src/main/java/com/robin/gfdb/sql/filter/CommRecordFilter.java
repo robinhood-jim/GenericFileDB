@@ -74,7 +74,7 @@ public class CommRecordFilter {
                 calculator.setOutputRecord(newRecord);
                 calculator.setSegment(segment);
                 ListenableFuture<Boolean> future = pool.submit(new CalculatorCallable(calculator));
-                Futures.addCallback(future, new FutureCallback<Boolean>() {
+                Futures.addCallback(future, new FutureCallback<>() {
                             @Override
                             public void onSuccess(Boolean aBoolean) {
                                 caPool.returnObject(calculator);
@@ -107,16 +107,22 @@ public class CommRecordFilter {
     public static void doGroupAgg(String key,SqlSegment segment,Map<String,Object> inputMap,Map<String,Object> newRecord,Map<String,Map<String,Object>> groupByMap) {
         Calculator calculator = null;
         try {
+            calculator = caPool.borrowObject();
+            Map<String,Object> tmpMap=new HashMap<>();
+            tmpMap.putAll(newRecord);
             for (int i = 0; i < segment.getSelectColumns().size(); i++) {
                 CommSqlParser.ValueParts parts = segment.getSelectColumns().get(i);
                 if (SqlKind.FUNCTION.contains(parts.getSqlKind())) {
-                    calculator = caPool.borrowObject();
                     calculator.clear();
                     calculator.setValueParts(segment.getSelectColumns().get(i));
                     calculator.setInputRecord(inputMap);
                     calculator.setSegment(segment);
                     SqlFunctions.doAggregate(calculator, parts, key, groupByMap, newRecord);
+                    tmpMap.remove(calculator.getColumnName());
                 }
+            }
+            if(groupByMap.get(key).size()< newRecord.size()){
+                groupByMap.get(key).putAll(tmpMap);
             }
         } catch (Exception ex) {
             ex.printStackTrace();

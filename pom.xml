@@ -27,6 +27,15 @@
             <email>robinhoodjim7704@gmail.com</email>
         </developer>
     </developers>
+    <repositories>
+        <repository>
+            <id>myrepo</id>
+            <url>https://raw.githubusercontent.com/robinhood-jim/mvn-repo/main</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <!-- Sub Model -->
     <modules>

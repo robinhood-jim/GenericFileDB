@@ -10,8 +10,13 @@ import java.net.URI;
 import java.util.List;
 
 public class LocalFileSystem extends AbstractFileSystem {
-	public LocalFileSystem(){
+	private static LocalFileSystem fs=new LocalFileSystem();
+	private LocalFileSystem(){
 		this.identifier= Const.FILESYSTEM.LOCAL.getValue();
+	}
+
+	public static LocalFileSystem getInstance(){
+		return fs;
 	}
 
 

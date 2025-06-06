@@ -36,7 +36,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected DataCollectionMeta colmeta;
     protected AbstractFileSystem fileSystem;
     protected InputStream inputStream;
-    protected Map<String, Object> cachedValue = new HashMap<>();
+    protected Map<String, Object> cachedValue = new ConcurrentHashMap<>();
     protected Map<String, Object> newRecord = new ConcurrentHashMap<>();
     protected Map<String, DataSetColumnMeta> columnMap = new HashMap<>();
     protected DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -47,10 +47,10 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected boolean useGroupBy=false;
     private  boolean useFilter=false;
     private String filterSql;
-    private SqlSegment segment;
+    protected SqlSegment segment;
     protected String defaultNewColumnPrefix = "N_COLUMN";
     protected Iterator<Map.Entry<String,Map<String,Object>>> groupIter;
-    protected Map<String,Map<String,Object>> groupByMap=new HashMap<>();
+    protected Map<String,Map<String,Object>> groupByMap=new ConcurrentHashMap<>();
 
     public AbstractFileReader(DataCollectionMeta colmeta,AbstractFileSystem fileSystem){
         this.colmeta=colmeta;
@@ -97,7 +97,6 @@ public abstract class AbstractFileReader implements IDataFileReader{
         try {
             // no order by
             if(!useOrderBy && !useGroupBy) {
-
                 pullNext();
                 while (!CollectionUtils.isEmpty(cachedValue) && useFilter && !CommRecordFilter.doesRecordAcceptable(segment, cachedValue)) {
                     pullNext();
@@ -172,10 +171,12 @@ public abstract class AbstractFileReader implements IDataFileReader{
                 }
                 if (segment != null && (!segment.isIncludeAllOriginColumn() && !CollectionUtils.isEmpty(segment.getSelectColumns()))) {
                     newRecord.clear();
-                    CommRecordFilter.doAsyncCalculator(segment, cachedValue, newRecord);
+                    if(!CollectionUtils.isEmpty(cachedValue)) {
+                        CommRecordFilter.doAsyncCalculator(segment, cachedValue, newRecord);
+                    }
                 }
                 //get group by column
-                if(!CollectionUtils.isEmpty(segment.getGroupBy())){
+                if(!CollectionUtils.isEmpty(segment.getGroupBy()) && !CollectionUtils.isEmpty(newRecord)){
                     if(builder.length()>0){
                         builder.delete(0,builder.length());
                     }
@@ -202,6 +203,8 @@ public abstract class AbstractFileReader implements IDataFileReader{
                 }
             }
             groupIter=groupByMap.entrySet().iterator();
+            System.out.println(groupByMap);
+            log.info("",groupByMap);
         }
     }
     private String getHavingColumnName(){
@@ -215,5 +218,13 @@ public abstract class AbstractFileReader implements IDataFileReader{
             }
         }
         return aliasName;
+    }
+
+    public Map<String, DataSetColumnMeta> getColumnMap() {
+        return columnMap;
+    }
+
+    public SqlSegment getSegment() {
+        return segment;
     }
 }
