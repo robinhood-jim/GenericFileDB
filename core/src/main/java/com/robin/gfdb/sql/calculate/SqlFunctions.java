@@ -234,83 +234,81 @@ public class SqlFunctions {
         if (SqlKind.FUNCTION.contains(valueParts.getSqlKind())) {
             ca.setCmpColumn(valueParts.getFunctionName());
             List<SqlNode> nodes = valueParts.getFunctionParams();
+
             switch (ca.getCmpColumn()) {
                 case "sum":
-                    extractValue(ca, valueParts, nodes);
-                    if (!ObjectUtils.isEmpty(ca.getLeftValue())) {
-                        groupMap.computeIfAbsent(key, k -> {
-                            Map<String, Object> retMap = new HashMap<>();
-                            retMap.put(ca.getColumnName(), ca.getLeftValue());
-                            retMap.putAll(newRecordMap);
-                            return retMap;
-                        });
-                        groupMap.computeIfPresent(key, (k, v) -> {
-                            v.put(ca.getColumnName(), (Double) ca.getLeftValue() + (Double) v.get(ca.getColumnName()));
-                            return v;
-                        });
+                    //extractValue(ca, valueParts, nodes);
+                    if(!groupMap.containsKey(key)){
+                        Map<String, Object> retMap = new HashMap<>();
+                        retMap.put(ca.getColumnName(),newRecordMap.get(ca.getColumnName()));
+                        groupMap.put(key,retMap);
+                    }else{
+                        if(groupMap.get(key).containsKey(ca.getColumnName())) {
+                            groupMap.get(key).put(ca.getColumnName(), (Double) groupMap.get(key).get(ca.getColumnName()) + (Double) newRecordMap.get(ca.getColumnName()));
+                        }else {
+                            groupMap.get(key).put(ca.getColumnName(),newRecordMap.get(ca.getColumnName()));
+                        }
                     }
                     break;
                 case "max":
-                    extractValue(ca, valueParts, nodes);
-                    if (!ObjectUtils.isEmpty(ca.getLeftValue())) {
-                        groupMap.computeIfAbsent(key, k -> {
-                            Map<String, Object> retMap = new HashMap<>();
-                            retMap.put(ca.getColumnName(), ca.getLeftValue());
-                            retMap.putAll(newRecordMap);
-                            return retMap;
-                        });
-                        groupMap.computeIfPresent(key, (k, v) -> {
-                            if ((Double) ca.getLeftValue() > (Double) v.get(ca.getColumnName())) {
-                                v.put(ca.getColumnName(), ca.getLeftValue());
-                            }
-                            return v;
-                        });
+                    //extractValue(ca, valueParts, nodes);
+                    if(!groupMap.containsKey(key)){
+                        Map<String, Object> retMap = new HashMap<>();
+                        retMap.put(ca.getColumnName(), newRecordMap.get(ca.getColumnName()));
+                        groupMap.put(key,retMap);
+                    }else{
+                        if(groupMap.get(key).containsKey(ca.getColumnName())) {
+                            groupMap.get(key).put(ca.getColumnName(), (Double) groupMap.get(key).get(ca.getColumnName()) > (Double) newRecordMap.get(ca.getColumnName())
+                                    ? groupMap.get(key).get(ca.getColumnName()) : newRecordMap.get(ca.getColumnName()));
+                        }else {
+                            groupMap.get(key).put(ca.getColumnName(),newRecordMap.get(ca.getColumnName()));
+                        }
                     }
                     break;
                 case "min":
-                    extractValue(ca, valueParts, nodes);
-                    if (!ObjectUtils.isEmpty(ca.getLeftValue())) {
-                        groupMap.computeIfAbsent(key, k -> {
-                            Map<String, Object> retMap = new HashMap<>();
-                            retMap.put(ca.getColumnName(), ca.getLeftValue());
-                            retMap.putAll(newRecordMap);
-                            return retMap;
-                        });
-                        groupMap.computeIfPresent(key, (k, v) -> {
-                            if ((Double) ca.getLeftValue() < (Double) v.get(ca.getColumnName())) {
-                                v.put(ca.getColumnName(), ca.getLeftValue());
-                            }
-                            return v;
-                        });
+                    //extractValue(ca, valueParts, nodes);
+                    if(!groupMap.containsKey(key)){
+                        Map<String, Object> retMap = new HashMap<>();
+                        retMap.put(ca.getColumnName(), newRecordMap.get(ca.getColumnName()));
+                        groupMap.put(key,retMap);
+                    }else{
+                        if(groupMap.get(key).containsKey(ca.getColumnName())) {
+                            groupMap.get(key).put(ca.getColumnName(), (Double) groupMap.get(key).get(ca.getColumnName()) < (Double) newRecordMap.get(ca.getColumnName())
+                                    ? groupMap.get(key).get(ca.getColumnName()) : newRecordMap.get(ca.getColumnName()));
+                        }else {
+                            groupMap.get(key).put(ca.getColumnName(),newRecordMap.get(ca.getColumnName()));
+                        }
                     }
                     break;
                 case "avg":
-                    extractValue(ca, valueParts, nodes);
-                    if (!ObjectUtils.isEmpty(ca.getLeftValue())) {
-                        groupMap.computeIfAbsent(key, k -> {
-                            Map<String, Object> retMap = new HashMap<>();
-                            retMap.put(ca.getColumnName(), ca.getLeftValue());
-                            retMap.put(ca.getColumnName() + "cou", 1);
-                            retMap.putAll(newRecordMap);
-                            return retMap;
-                        });
-                        groupMap.computeIfPresent(key, (k, v) -> {
-                            v.put(ca.getColumnName(), (Double) ca.getLeftValue() + (Double) v.get(ca.getColumnName()));
-                            v.put(ca.getColumnName() + "cou", (Integer) v.get(ca.getColumnName() + "cou") + 1);
-                            return v;
-                        });
+                    //extractValue(ca, valueParts, nodes);
+                    if(!groupMap.containsKey(key)){
+                        Map<String, Object> retMap = new HashMap<>();
+                        retMap.put(ca.getColumnName(), newRecordMap.get(ca.getColumnName()));
+                        retMap.put(ca.getColumnName()+"cou", 1);
+                        groupMap.put(key,retMap);
+                    }else{
+                        if(groupMap.get(key).containsKey(ca.getColumnName())) {
+                            groupMap.get(key).put(ca.getColumnName(), (Double) groupMap.get(key).get(ca.getColumnName()) + (Double) newRecordMap.get(ca.getColumnName()));
+                            groupMap.get(key).put(ca.getColumnName() + "cou", (Integer) groupMap.get(key).get(ca.getColumnName()+"cou") + 1);
+                        }else {
+                            groupMap.get(key).put(ca.getColumnName(),newRecordMap.get(ca.getColumnName()));
+                            groupMap.get(key).put(ca.getColumnName() + "cou",1);
+                        }
                     }
                     break;
                 case "count":
-                    groupMap.computeIfAbsent(key, k -> {
+                    if(!groupMap.containsKey(key)){
                         Map<String, Object> retMap = new HashMap<>();
                         retMap.put(ca.getColumnName(), 1);
-                        return retMap;
-                    });
-                    groupMap.computeIfPresent(key, (k, v) -> {
-                        v.put(ca.getColumnName(), (Integer) v.get(ca.getColumnName()) + 1);
-                        return v;
-                    });
+                        groupMap.put(key,retMap);
+                    }else{
+                        if(groupMap.get(key).containsKey(ca.getColumnName())) {
+                            groupMap.get(key).put(ca.getColumnName(), (Integer) groupMap.get(key).get(ca.getColumnName()) + 1);
+                        }else{
+                            groupMap.get(key).put(ca.getColumnName(),1);
+                        }
+                    }
                     break;
             }
         } else if (SqlKind.IDENTIFIER.equals(valueParts.getSqlKind()) && !ObjectUtils.isEmpty(ca.getInputRecord().get(ca.getColumnName()))) {

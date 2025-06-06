@@ -7,8 +7,8 @@ import com.robin.core.base.model.BaseObject;
 import com.robin.core.base.util.MessageUtils;
 import com.robin.core.convert.util.ConvertUtil;
 import com.robin.core.query.util.PageQuery;
+import com.robin.gfdb.core.service.AbstractService;
 import com.robin.msf.bean.ApplicationContextHolder;
-import com.robin.msf.service.AbstractService;
 import io.micronaut.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,8 +184,8 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     }
 
     protected void doAfterQuery(PageQuery query, Map<String, Object> retMap) {
-        retMap.put("recordCount", query.getRecordCount());
-        retMap.put("pageNumber", query.getPageNumber());
+        retMap.put("recordCount", query.getTotal());
+        retMap.put("pageNumber", query.getCurrentPage());
         retMap.put("pageCount", query.getPageCount());
         retMap.put("pageSize", query.getPageSize());
         retMap.put("data",query.getRecordSet());

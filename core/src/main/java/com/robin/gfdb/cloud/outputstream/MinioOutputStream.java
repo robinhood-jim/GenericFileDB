@@ -12,11 +12,13 @@ import io.minio.UploadPartResponse;
 import io.minio.messages.Part;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.apache.flink.core.memory.MemorySegment;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.util.ObjectUtils;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 
@@ -105,9 +107,15 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
         futures.add(guavaExecutor.submit(new MinioUploadPartCallable(writeBytesRef,partNumber,position,new WeakReference<>(client.getPartUploadUrl(bucketName,path,uploadId,partNumber)))));
     }
 
+    @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new MinioUploadPartCallable(buffer,segment,partNumber,position,new WeakReference<>(client.getPartUploadUrl(bucketName,path,uploadId,partNumber)))));
+    }
+
     class MinioUploadPartCallable extends AbstractUploadPartCallable{
         private WeakReference<Request> request;
         private WeakReference<RequestBody> body;
+
 
         MinioUploadPartCallable(WeakReference<byte[]> content, Integer partNum,int byteSize, WeakReference<String> partUrl){
             super(content,partNum,byteSize);
@@ -117,9 +125,10 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
             builder.header("Accept-Encoding", "identity");
             request=new WeakReference<>(builder.build());
         }
-        MinioUploadPartCallable(WeakReference<byte[]> content, Integer partNum,int byteSize, WeakReference<String> partUrl, int retryNum){
-            super(content,partNum,byteSize);
-            this.retryNum=retryNum;
+        MinioUploadPartCallable(ByteBuffer buffer, MemorySegment segment, Integer partNum, int byteSize, WeakReference<String> partUrl){
+            super(buffer,segment,partNum,byteSize);
+            content=new WeakReference<>(new byte[byteSize]);
+            buffer.get(content.get(),0,byteSize);
             body=new WeakReference<>(RequestBody.create(content.get()));
             Request.Builder builder = new Request.Builder().url(partUrl.get()).put(body.get());
 
@@ -157,8 +166,9 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
 
         @Override
         public void free() {
-            body=null;
-            request=null;
+            body.clear();
+            request.clear();
+            super.free();
         }
     }
     public static class Builder {

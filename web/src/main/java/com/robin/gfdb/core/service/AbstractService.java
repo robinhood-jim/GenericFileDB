@@ -1,4 +1,4 @@
-package com.robin.msf.service;
+package com.robin.gfdb.core.service;
 
 import com.robin.core.base.dao.util.AnnotationRetriever;
 import com.robin.core.base.dao.util.PropertyFunction;
@@ -10,8 +10,9 @@ import com.robin.core.base.util.Const;
 import com.robin.core.query.util.PageQuery;
 import com.robin.core.sql.util.FilterCondition;
 import com.robin.core.sql.util.FilterConditionBuilder;
+import com.robin.gfdb.core.dao.GenericJdbcDao;
 import com.robin.msf.bean.ApplicationContextHolder;
-import com.robin.msf.dao.GenericJdbcDao;
+
 import io.micronaut.inject.qualifiers.Qualifiers;
 import io.micronaut.transaction.annotation.ReadOnly;
 import jakarta.transaction.Transactional;
@@ -200,26 +201,27 @@ public abstract class AbstractService<V extends BaseObject,P extends Serializabl
 
     @Override
     @ReadOnly
-    public List<V> queryByFieldOrderBy(String orderByStr, String fieldName, Const.OPERATOR oper, Object... fieldValues) throws ServiceException {
+    public List<V> queryByFieldOrderBy(String orderByStr,boolean ascDesc, String fieldName, Const.OPERATOR oper, Object... fieldValues) throws ServiceException {
         try{
-            return jdbcDao.queryByFieldOrderBy(type,fieldName, oper, orderByStr, fieldValues);
-        }catch (DAOException ex){
-            throw new ServiceException(ex);
+            return jdbcDao.queryByFieldOrderBy(type, fieldName, oper, orderByStr+ (ascDesc?" asc":" desc"), fieldValues);
+        }
+        catch(Exception e){
+            throw new ServiceException(e);
         }
     }
 
     @Override
     @ReadOnly
-    public List<V> queryByFieldOrderBy(String s, PropertyFunction<V, ?> propertyFunction, Const.OPERATOR operator, Object... fieldValues) throws ServiceException {
-        List<V> retlist;
+    public List<V> queryByFieldOrderBy(PropertyFunction<V, ?> orderField, boolean ascDesc, PropertyFunction<V,?> queryField, Const.OPERATOR oper, Object... fieldValues) throws ServiceException {
         try{
-            retlist= jdbcDao.queryByFieldOrderBy(type,propertyFunction, operator,s, fieldValues);
+            return jdbcDao.queryByFieldOrderBy(type, queryField, oper, orderField+ (ascDesc?" asc":" desc"), fieldValues);
         }
-        catch(DAOException ex){
-            throw new ServiceException(ex);
+        catch(Exception e){
+            throw new ServiceException(e);
         }
-        return retlist;
     }
+
+
 
     @Override
     @ReadOnly
@@ -300,6 +302,11 @@ public abstract class AbstractService<V extends BaseObject,P extends Serializabl
 
     @Override
     public int countByCondition(FilterCondition filterCondition) {
+        return 0;
+    }
+
+    @Override
+    public int batchUpdate(List<V> list) {
         return 0;
     }
 }

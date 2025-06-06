@@ -2,6 +2,7 @@ package com.robin.gfdb.sql.filter;
 
 import com.google.common.util.concurrent.*;
 import com.robin.core.base.exception.GenericException;
+import com.robin.core.base.exception.MissingConfigException;
 import com.robin.gfdb.sql.calculate.Calculator;
 import com.robin.gfdb.sql.calculate.CalculatorCallable;
 import com.robin.gfdb.sql.calculate.CalculatorPool;
@@ -73,7 +74,7 @@ public class CommRecordFilter {
                 calculator.setOutputRecord(newRecord);
                 calculator.setSegment(segment);
                 ListenableFuture<Boolean> future = pool.submit(new CalculatorCallable(calculator));
-                Futures.addCallback(future, new FutureCallback<Boolean>() {
+                Futures.addCallback(future, new FutureCallback<>() {
                             @Override
                             public void onSuccess(Boolean aBoolean) {
                                 caPool.returnObject(calculator);
@@ -106,16 +107,22 @@ public class CommRecordFilter {
     public static void doGroupAgg(String key,SqlSegment segment,Map<String,Object> inputMap,Map<String,Object> newRecord,Map<String,Map<String,Object>> groupByMap) {
         Calculator calculator = null;
         try {
+            calculator = caPool.borrowObject();
+            Map<String,Object> tmpMap=new HashMap<>();
+            tmpMap.putAll(newRecord);
             for (int i = 0; i < segment.getSelectColumns().size(); i++) {
                 CommSqlParser.ValueParts parts = segment.getSelectColumns().get(i);
                 if (SqlKind.FUNCTION.contains(parts.getSqlKind())) {
-                    calculator = caPool.borrowObject();
                     calculator.clear();
                     calculator.setValueParts(segment.getSelectColumns().get(i));
                     calculator.setInputRecord(inputMap);
                     calculator.setSegment(segment);
                     SqlFunctions.doAggregate(calculator, parts, key, groupByMap, newRecord);
+                    tmpMap.remove(calculator.getColumnName());
                 }
+            }
+            if(groupByMap.get(key).size()< newRecord.size()){
+                groupByMap.get(key).putAll(tmpMap);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -131,5 +138,84 @@ public class CommRecordFilter {
         }else {
             builder.append(value).append("|");
         }
+    }
+    public static boolean cmpNumber( SqlKind comparator,Number left, Number right) {
+        boolean retValue = false;
+        if (Double.class.isAssignableFrom(left.getClass()) || Double.class.isAssignableFrom(right.getClass())) {
+            switch (comparator) {
+                case GREATER_THAN:
+                    retValue = left.doubleValue() > right.doubleValue();
+                    break;
+                case LESS_THAN:
+                    retValue = left.doubleValue() < right.doubleValue();
+                    break;
+                case GREATER_THAN_OR_EQUAL:
+                    retValue = left.doubleValue() >= right.doubleValue();
+                    break;
+                case LESS_THAN_OR_EQUAL:
+                    retValue = left.doubleValue() <= right.doubleValue();
+                    break;
+                case NOT_EQUALS:
+                    retValue = left.doubleValue() != right.doubleValue();
+                    break;
+                case EQUALS:
+                    retValue = left.doubleValue() == right.doubleValue();
+                    break;
+                default:
+                    throw new MissingConfigException("can not handle");
+            }
+
+        } else if (Integer.class.isAssignableFrom(left.getClass()) || Integer.class.isAssignableFrom(right.getClass())) {
+            switch (comparator) {
+                case GREATER_THAN:
+                    retValue = left.intValue() > right.intValue();
+                    break;
+                case LESS_THAN:
+                    retValue = left.intValue() < right.intValue();
+                    break;
+                case GREATER_THAN_OR_EQUAL:
+                    retValue = left.intValue() >= right.intValue();
+                    break;
+                case LESS_THAN_OR_EQUAL:
+                    retValue = left.intValue() <= right.intValue();
+                    break;
+                case NOT_EQUALS:
+                    retValue = left.intValue() != right.intValue();
+                    break;
+                case EQUALS:
+                    retValue = left.intValue() == right.intValue();
+                    break;
+                default:
+                    throw new MissingConfigException("can not handle");
+            }
+        } else if (Long.class.isAssignableFrom(left.getClass()) || Long.class.isAssignableFrom(right.getClass())) {
+            switch (comparator) {
+                case GREATER_THAN:
+                    retValue = left.longValue() > right.longValue();
+                    break;
+                case LESS_THAN:
+                    retValue = left.longValue() < right.longValue();
+                    break;
+                case GREATER_THAN_OR_EQUAL:
+                    retValue = left.longValue() >= right.longValue();
+                    break;
+                case LESS_THAN_OR_EQUAL:
+                    retValue = left.longValue() <= right.longValue();
+                    break;
+                case NOT_EQUALS:
+                    retValue = left.longValue() != right.longValue();
+                    break;
+                case EQUALS:
+                    retValue = left.longValue() == right.longValue();
+                    break;
+                default:
+                    throw new MissingConfigException("can not handle");
+            }
+        }
+        return retValue;
+    }
+    public static void close(){
+        caPool.close();
+        pool.shutdown();
     }
 }

@@ -1,7 +1,8 @@
-package com.robin.gfdb.meta.service;
+package com.robin.msf.service;
 
+import com.robin.gfdb.core.service.AbstractService;
 import com.robin.gfdb.meta.model.FileStorageDefine;
-import com.robin.msf.service.AbstractService;
+
 import jakarta.inject.Singleton;
 
 @Singleton

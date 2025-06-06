@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.robin.core.base.util.Const;
 import com.robin.core.base.util.ResourceConst;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +31,14 @@ import java.util.concurrent.Executors;
  */
 @Slf4j
 public abstract class AbstractUploadPartOutputStream extends OutputStream {
+    //current write segment offHeap
     protected ByteBuffer buffer;
+    //write out part segment store as offHeap?
+    protected boolean useOffHeapForAsync=false;
+    //current write segment point
     protected MemorySegment segment;
+    protected Map<Integer,MemorySegment> segmentMap;
+    protected Map<Integer,ByteBuffer> bufferMap;
     protected String bucketName;
     protected String path;
     protected int position;
@@ -57,10 +64,17 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
             if (!ObjectUtils.isEmpty(meta.getResourceCfgMap().get(ResourceConst.DEFAULTSTORAGEUPLOADTHREADKEY))) {
                 uploadThread = Integer.parseInt(meta.getResourceCfgMap().get(ResourceConst.DEFAULTSTORAGEUPLOADTHREADKEY).toString());
             }
+            if(!ObjectUtils.isEmpty(meta.getResourceCfgMap().get(ResourceConst.USEOFFHEAPFORASYNCKEY)) && Const.TRUE.equalsIgnoreCase(meta.getResourceCfgMap().get(ResourceConst.USEOFFHEAPFORASYNCKEY).toString())){
+                useOffHeapForAsync=true;
+            }
             executorService = Executors.newFixedThreadPool(uploadThread);
             guavaExecutor = MoreExecutors.listeningDecorator(executorService);
         }
-        initHeap();
+        if(!useOffHeapForAsync){
+            initHeap();
+        }else {
+            initNewPart(0);
+        }
     }
 
     @Override
@@ -108,10 +122,14 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
             }
             if (position >= buffer.capacity() || force) {
                 doUploadPart();
-                buffer.clear();
-                buffer.position(0);
-                position = 0;
                 partNum += 1;
+                if(!useOffHeapForAsync) {
+                    buffer.clear();
+                    buffer.position(0);
+                    position = 0;
+                }else {
+                    initNewPart(partNum);
+                }
             }
         } catch (Exception ex) {
             throw new IOException(ex);
@@ -163,10 +181,14 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
             uploadPart();
         } else {
             if (!ObjectUtils.isEmpty(guavaExecutor)) {
-                WeakReference<byte[]> writeBytesRef = new WeakReference<>(new byte[(int) position]);
-                buffer.position(0);
-                buffer.get(writeBytesRef.get(), 0, position);
-                uploadAsync(writeBytesRef, partNum, position);
+                if(!useOffHeapForAsync) {
+                    WeakReference<byte[]> writeBytesRef = new WeakReference<>(new byte[(int) position]);
+                    buffer.position(0);
+                    buffer.get(writeBytesRef.get(), 0, position);
+                    uploadAsync(writeBytesRef, partNum, position);
+                }else{
+                    uploadAsync(bufferMap.get(partNum),segmentMap.get(partNum),partNum,position);
+                }
             }
         }
     }
@@ -174,20 +196,31 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
     protected String getContentType(DataCollectionMeta meta) {
         return !ObjectUtils.isEmpty(meta.getContent()) && !ObjectUtils.isEmpty(meta.getContent().getContentType()) ? meta.getContent().getContentType() : ResourceConst.DEFAULTCONTENTTYPE;
     }
-
-    protected void initHeap() {
+    protected void initHeap(){
         int initLength = !ObjectUtils.isEmpty(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY))
                 ? Integer.parseInt(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY).toString()) : ResourceConst.DEFAULTCACHEOFFHEAPSIZE;
         segment = MemorySegmentFactory.allocateOffHeapUnsafeMemory(initLength, this, new Thread() {
         });
         buffer = segment.getOffHeapBuffer();
     }
+    protected void initNewPart(int partNum){
+        int initLength = !ObjectUtils.isEmpty(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY))
+                ? Integer.parseInt(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY).toString()) : ResourceConst.DEFAULTCACHEOFFHEAPSIZE;
+        MemorySegment segment = MemorySegmentFactory.allocateOffHeapUnsafeMemory(initLength, this, new Thread() {
+        });
+        buffer = segment.getOffHeapBuffer();
+        bufferMap.put(partNum,buffer);
+        segmentMap.put(partNum,segment);
+    }
+
+
 
     protected abstract void initiateUpload() throws IOException;
 
     protected abstract void uploadPart() throws IOException;
 
     protected abstract void uploadAsync(WeakReference<byte[]> writeBytesRef, int partNumber, int byteSize) throws IOException;
+    protected abstract void uploadAsync(ByteBuffer buffer,MemorySegment segment, int partNumber, int byteSize) throws IOException;
 
     protected abstract String completeMultiUpload() throws IOException;
 
@@ -197,12 +230,20 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
         protected int retryNum = 4;
         protected int partNumber;
         protected WeakReference<byte[]> content;
+        protected MemorySegment segment;
+        protected ByteBuffer buffer;
         protected int byteSize;
 
         AbstractUploadPartCallable(WeakReference<byte[]> content, int partNumber, int byteSize) {
             this.content = content;
             this.partNumber = partNumber;
             this.byteSize = byteSize;
+        }
+        AbstractUploadPartCallable(ByteBuffer buffer,MemorySegment segment,int partNumber,int byteSize){
+            this.buffer=buffer;
+            this.segment=segment;
+            this.partNumber=partNumber;
+            this.byteSize=byteSize;
         }
 
         @Override
@@ -231,7 +272,15 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
         }
 
         protected void free() {
-
+            if(content!=null){
+                content.clear();
+            }
+            if(buffer!=null){
+                buffer.clear();
+            }
+            if(segment!=null){
+                segment.free();
+            }
         }
 
         protected abstract boolean uploadPartAsync() throws IOException;

@@ -5,11 +5,13 @@ import com.qcloud.cos.model.*;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.stream.ByteBufferInputStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.core.memory.MemorySegment;
 import org.springframework.util.ObjectUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,6 +91,32 @@ public class COSOutputStream extends AbstractUploadPartOutputStream {
                     request.setUploadId(uploadId);
                     request.setKey(path);
                     request.setInputStream(new ByteArrayInputStream(writeBytesRef.get()));
+                    request.setPartNumber(partNumber);
+                    UploadPartResult result = client.uploadPart(request);
+                    if (!ObjectUtils.isEmpty(result)) {
+                        partETagMap.put(partNumber,result.getPartETag());
+                    }
+                    return true;
+                } catch (Exception ex) {
+                    throw new IOException(ex);
+                }finally {
+                    writeBytesRef.clear();
+                }
+            }
+        }));
+    }
+
+    @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new AbstractUploadPartCallable(buffer,segment,partNumber,byteSize) {
+            @Override
+            protected boolean uploadPartAsync() throws IOException {
+                try {
+                    UploadPartRequest request = new UploadPartRequest();
+                    request.setUploadId(uploadId);
+                    request.setKey(path);
+                    buffer.position(0);
+                    request.setInputStream(new ByteBufferInputStream(buffer,byteSize));
                     request.setPartNumber(partNumber);
                     UploadPartResult result = client.uploadPart(request);
                     if (!ObjectUtils.isEmpty(result)) {

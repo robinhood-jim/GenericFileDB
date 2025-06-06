@@ -10,6 +10,7 @@ import lombok.Data;
 public class DataCollectionDefine extends BaseObject {
     @MappingField(primary = true,increment = true)
     private Long id;
+    private String name;
     private String resPath;
     private String fileFormat;
     private Long storageId;

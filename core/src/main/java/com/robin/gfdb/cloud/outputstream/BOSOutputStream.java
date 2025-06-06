@@ -4,11 +4,13 @@ import com.baidubce.services.bos.BosClient;
 import com.baidubce.services.bos.model.*;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.gfdb.stream.ByteBufferInputStream;
+import org.apache.flink.core.memory.MemorySegment;
 import org.springframework.util.ObjectUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +50,26 @@ public class BOSOutputStream extends AbstractUploadPartOutputStream {
             protected boolean uploadPartAsync() throws IOException {
                 try {
                     UploadPartRequest request = new UploadPartRequest(bucketName, path, uploadId, partNumber, byteSize, new ByteArrayInputStream(writeBytesRef.get()));
+                    UploadPartResponse response = client.uploadPart(request);
+                    if (!ObjectUtils.isEmpty(response)) {
+                        eTagMap.put(partNumber, response.getPartETag());
+                    }
+                    return true;
+                } catch (Exception ex) {
+                    throw new IOException(ex);
+                }
+            }
+        }));
+    }
+
+    @Override
+    protected void uploadAsync(ByteBuffer buffer, MemorySegment segment, int partNumber, int byteSize) throws IOException {
+        futures.add(guavaExecutor.submit(new AbstractUploadPartCallable(buffer,segment,partNumber,byteSize) {
+            @Override
+            protected boolean uploadPartAsync() throws IOException {
+                try {
+                    buffer.position(0);
+                    UploadPartRequest request = new UploadPartRequest(bucketName, path, uploadId, partNumber, byteSize, new ByteBufferInputStream(buffer,byteSize));
                     UploadPartResponse response = client.uploadPart(request);
                     if (!ObjectUtils.isEmpty(response)) {
                         eTagMap.put(partNumber, response.getPartETag());
