@@ -19,7 +19,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 
-public class AvroFileWriter extends AbstractFileWriter{
+public class AvroFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private Schema schema;
     private DatumWriter<GenericRecord> dwriter;
     private DataFileWriter<GenericRecord> fileWriter;

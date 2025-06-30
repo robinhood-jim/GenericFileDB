@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 @Slf4j
-public class XmlFileReader extends AbstractFileReader {
+public class XmlFileReader extends AbstractFileReader implements IDataFileReader{
     private XMLInputFactory factory;
     private XMLStreamReader streamReader;
     private String rooteleName;

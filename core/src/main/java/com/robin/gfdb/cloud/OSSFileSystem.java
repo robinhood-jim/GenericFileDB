@@ -4,10 +4,7 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.common.auth.CredentialsProvider;
 import com.aliyun.oss.common.auth.CredentialsProviderFactory;
-import com.aliyun.oss.model.Bucket;
-import com.aliyun.oss.model.OSSObject;
-import com.aliyun.oss.model.ObjectMetadata;
-import com.aliyun.oss.model.PutObjectResult;
+import com.aliyun.oss.model.*;
 import com.robin.core.base.exception.MissingConfigException;
 import com.robin.core.base.util.Const;
 import com.robin.core.base.util.ResourceConst;
@@ -21,6 +18,8 @@ import org.springframework.util.ObjectUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Aliyun OSS FileSystemAccessor
@@ -66,7 +65,7 @@ public class OSSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected synchronized OutputStream getOutputStream(String path) throws IOException {
+    protected synchronized OutputStream putObject(String path) throws IOException {
         return new OSSOutputStream(ossClient, colmeta,getBucketName(colmeta),path,region);
     }
 
@@ -108,6 +107,17 @@ public class OSSFileSystem extends AbstractCloudStorageFileSystem {
         metadata.setContentLength(size);
         PutObjectResult result=ossClient.putObject(bucketName,meta.getPath(),inputStream,metadata);
         return result.getResponse().isSuccessful();
+    }
+
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        ListObjectsRequest request=new ListObjectsRequest(bucketName);
+        request.setPrefix(sourcePath);
+        ObjectListing result= ossClient.listObjects(request);
+        if(!CollectionUtils.isEmpty(result.getObjectSummaries())){
+            return result.getObjectSummaries().stream().map(OSSObjectSummary::getKey).collect(Collectors.toList());
+        }
+        return null;
     }
 
     public static class Builder{

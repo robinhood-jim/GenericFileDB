@@ -115,6 +115,7 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
     class MinioUploadPartCallable extends AbstractUploadPartCallable{
         private WeakReference<Request> request;
         private WeakReference<RequestBody> body;
+        private MemorySegment segment;
 
 
         MinioUploadPartCallable(WeakReference<byte[]> content, Integer partNum,int byteSize, WeakReference<String> partUrl){
@@ -134,6 +135,7 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
 
             builder.header("Accept-Encoding", "identity");
             request=new WeakReference<>(builder.build());
+            this.segment=segment;
         }
         protected boolean uploadPartAsync() throws IOException {
             boolean successTag;
@@ -144,6 +146,9 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
                         public void onFailure(@NotNull Call call, @NotNull IOException e) {
                             log.error("{}",e);
                             completeTag.complete(false);
+                            if(segment!=null){
+                                freeMemorySegment(segment);
+                            }
                         }
 
                         @Override
@@ -152,6 +157,9 @@ public class MinioOutputStream extends AbstractUploadPartOutputStream {
                                 completeTag.complete(true);
                                 String etag=response.header("ETag").replaceAll("\"", "");
                                 etagsMap.put(partNumber,etag);
+                            }
+                            if(segment!=null){
+                                freeMemorySegment(segment);
                             }
                         }
                     }

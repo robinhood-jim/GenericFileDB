@@ -23,6 +23,7 @@ import java.util.*;
 public class ApacheVfsFileSystem extends AbstractFileSystem {
     private ThreadLocal<FileObject> local=new ThreadLocal<>();
     private StandardFileSystemManager manager;
+    private static final Logger logger = LoggerFactory.getLogger(ApacheVfsFileSystem.class);
 
     public ApacheVfsFileSystem() {
         this.identifier = Const.FILESYSTEM.VFS.getValue();
@@ -41,7 +42,7 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ApacheVfsFileSystem.class);
+
 
     @Override
     public Pair<BufferedReader, InputStream> getInResourceByReader(String resourcePath) throws IOException {
@@ -64,6 +65,7 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
         OutputStream outputStream;
         try {
             FileObject fileObject = createNotExists(colmeta, resourcePath);
+            local.set(fileObject);
             outputStream = fileObject.getContent().getOutputStream();
             writer = getWriterByPath(resourcePath, outputStream, colmeta.getEncode());
             return Pair.of(writer, outputStream);
@@ -162,7 +164,9 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
     public FileObject createNotExists(DataCollectionMeta meta, String resourcePath) throws Exception {
         VfsParam param = new VfsParam();
         ConvertUtil.convertToTarget(param, meta.getResourceCfgMap());
-        try (FileObject fo = manager.resolveFile(getUriByParam(param, resourcePath).toString(), getOptions(param))) {
+        FileObject fo;
+        try {
+            fo= manager.resolveFile(getUriByParam(param, resourcePath).toString(), getOptions(param));
             if (fo.exists()) {
                 if (FileType.FOLDER.equals(fo.getType())) {
                     logger.error("File {} is a directory！", resourcePath);
@@ -342,6 +346,9 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
         if(local.get()!=null){
             local.get().close();
             local.remove();
+        }
+        if(manager!=null){
+            manager.close();
         }
     }
 }

@@ -6,6 +6,7 @@ import com.robin.core.base.util.FileUtils;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.core.fileaccess.meta.DataSetColumnMeta;
 import com.robin.gfdb.storage.AbstractFileSystem;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
@@ -49,13 +50,17 @@ public abstract class AbstractFileWriter implements IDataFileWriter {
     @Override
     public void initalize() throws IOException {
         if(outputStream==null){
-            if(!useRawOutputStream) {
-                outputStream = fileSystem.getOutResourceByStream(colmeta.getPath());
-            }else {
-                outputStream=fileSystem.getRawOutputStream(colmeta.getPath());
+            if(!useBufferedWriter) {
+                if (!useRawOutputStream) {
+                    outputStream = fileSystem.getOutResourceByStream(colmeta.getPath());
+                } else {
+                    outputStream = fileSystem.getRawOutputStream(colmeta.getPath());
+                }
             }
-            if(useBufferedWriter) {
-                writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+            else {
+                Pair<BufferedWriter,OutputStream> pair=fileSystem.getOutResourceByWriter(colmeta.getPath());
+                writer = pair.getKey();
+                outputStream=pair.getValue();
             }
         }
         logger.info("using Writer {}",getClass().getCanonicalName());
@@ -138,6 +143,7 @@ public abstract class AbstractFileWriter implements IDataFileWriter {
 
         }
     }
+
     @Override
     public String getIdentifier() {
         return identifier;

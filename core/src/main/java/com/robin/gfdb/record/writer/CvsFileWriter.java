@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CvsFileWriter extends AbstractFileWriter{
+public class CvsFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private List<String> retList=null;
     private String split=",";
 

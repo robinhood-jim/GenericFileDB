@@ -102,6 +102,8 @@ public class S3OutputStream extends AbstractUploadPartOutputStream {
                     return true;
                 }catch (Exception ex){
                     throw new IOException(ex);
+                }finally {
+                    freeMemorySegment(segment);
                 }
             }
         }));

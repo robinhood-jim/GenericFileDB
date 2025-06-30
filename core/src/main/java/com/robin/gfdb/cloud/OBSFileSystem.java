@@ -18,6 +18,7 @@ import org.springframework.util.ObjectUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * HUAWEI OBS FileSystemAccessor,must init individual
@@ -92,6 +93,11 @@ public class OBSFileSystem extends AbstractCloudStorageFileSystem {
         return result.getStatusCode()==200;
     }
 
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        return null;
+    }
+
     public static class Builder {
         private OBSFileSystem accessor;
 
@@ -138,7 +144,7 @@ public class OBSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected OutputStream getOutputStream(String path) throws IOException {
+    protected OutputStream putObject(String path) throws IOException {
         return null;
     }
 

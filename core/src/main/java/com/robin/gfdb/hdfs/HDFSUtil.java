@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.io.*;
 import java.util.List;
@@ -41,7 +42,7 @@ public class HDFSUtil {
 	}
 
 	public HDFSUtil(DataCollectionMeta meta){
-		if(meta.getResourceCfgMap()!=null && !meta.getResourceCfgMap().isEmpty()) {
+		if(!CollectionUtils.isEmpty(meta.getResourceCfgMap())) {
 			HDFSProperty property = new HDFSProperty();
 			property.setHaConfigByObj(meta.getResourceCfgMap());
 			config = new Configuration(false);
@@ -91,9 +92,9 @@ public class HDFSUtil {
 	}
 
 	public static void setSecurity(Configuration config) throws IOException {
-		String user = config.get("dfs.kerberos.username");
-		String keytab = config.get("dfs.kerberos.keytab");
-		String ticketCachePath = config.get("dfs.kerberos.ticketCache");
+		String user = config.get("dfs.datanode.kerberos.principal");
+		String keytab = config.get("dfs.namenode.keytab.file");
+		String ticketCachePath = config.get("dfs.datanode.kerberos.ticketCache");
 		if (ticketCachePath != null) {
 			UserGroupInformation.getUGIFromTicketCache(ticketCachePath, user);
 		} else {
@@ -115,7 +116,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.uploadByInputStream(config, in, toUrl, bufferSize);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.uploadByInputStream(config, in, toUrl, bufferSize)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.uploadByInputStream(config, in, toUrl, bufferSize));
         }
 	}
 	public String uploadByInputStream(@NonNull final InputStream in,@NonNull String toUrl, int bufferSize,@NonNull String fromCharset,@NonNull String toCharset) throws HdfsException{
@@ -131,7 +132,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.deleteHdsfUrl(config, uri, path);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.deleteHdsfUrl(config, uri, path)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.deleteHdsfUrl(config, uri, path));
         }
 	}
 	public synchronized boolean emptyDirectory(String hdfsUrl) throws HdfsException{
@@ -178,7 +179,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.mkdir(config, relativeName);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.mkdir(config, relativeName)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.mkdir(config, relativeName));
         }
 	}
 	
@@ -186,7 +187,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.isDirectory(config, hdfsUrl);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.isDirectory(config, hdfsUrl)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.isDirectory(config, hdfsUrl));
         }
 	}
 	
@@ -194,7 +195,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.delete(config, hdfsUrl);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.delete(config, hdfsUrl)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.delete(config, hdfsUrl));
         }
 	}
 	
@@ -202,7 +203,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.setresp(config, hdfsUrl, resp);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.setresp(config, hdfsUrl, resp)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.setresp(config, hdfsUrl, resp));
         }
 	}
 	
@@ -210,7 +211,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.exists(config, hdfsUrl);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.exists(config, hdfsUrl)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.exists(config, hdfsUrl));
         }
 	}
 	
@@ -226,7 +227,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.copyToLocal(config, hdfsUrl,toUrl);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.copyFromLocal(config, hdfsUrl, toUrl)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.copyFromLocal(config, hdfsUrl, toUrl));
         }
 	}
 	
@@ -234,7 +235,7 @@ public class HDFSUtil {
 		if(!useSecurity) {
             return HDFSCallUtil.copyFromLocal(config, hdfsUrl,toUrl);
         } else {
-            return Boolean.TRUE.equals(HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.copyFromLocal(config, hdfsUrl, toUrl)));
+            return HDFSSecurityUtil.executeSecurityWithProxy(config, f -> HDFSCallUtil.copyFromLocal(config, hdfsUrl, toUrl));
         }
 	}
 	
@@ -392,6 +393,11 @@ public class HDFSUtil {
 			stream.close();
 		}catch (Exception e) {
 			throw new HdfsException(e);
+		}
+	}
+	public void close(){
+		if(config!=null){
+			config.clear();
 		}
 	}
 
