@@ -51,7 +51,7 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
         try {
             ConvertUtil.convertToTarget(param, colmeta.getResourceCfgMap());
             FileObject fileObject = manager.resolveFile(getUriByParam(param, resourcePath).toString(), getOptions(param));
-
+            local.set(fileObject);
             stream = getInResource(fileObject, colmeta);
             return Pair.of(new BufferedReader(new InputStreamReader(stream, colmeta.getEncode())), stream);
         } catch (Exception ex) {

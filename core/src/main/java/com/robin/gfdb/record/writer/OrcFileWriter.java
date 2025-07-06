@@ -47,6 +47,7 @@ public class OrcFileWriter extends AbstractFileWriter implements IDataFileWriter
     @Override
     public void initalize() throws IOException {
         super.initalize();
+        useRawOutputStream=true;
         if (!ObjectUtils.isEmpty(colmeta.getResourceCfgMap().get(BACTH_SIZE))) {
             batchSize = Integer.parseInt(colmeta.getResourceCfgMap().get(BACTH_SIZE).toString());
         }

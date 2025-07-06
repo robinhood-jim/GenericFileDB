@@ -51,6 +51,7 @@ public class OrcFileReader extends AbstractFileReader{
     public OrcFileReader(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.ORC.getValue());
+        useRawInputStream=true;
     }
 
 

@@ -144,14 +144,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     public void setIdentifier(String identifier){
         this.identifier=identifier;
     }
-    @Override
-    public void afterProcess() throws IOException {
-        try {
-            close();
-        } catch (IOException ex) {
-            log.error("{}", ex.getMessage());
-        }
-    }
+
     public void withFilterSql(String filterSql) {
         this.filterSql = filterSql;
         segment = CommSqlParser.parseSingleTableQuerySql(filterSql, Lex.MYSQL, colmeta, defaultNewColumnPrefix);

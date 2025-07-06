@@ -61,7 +61,6 @@ public class LocalFileSystem extends AbstractFileSystem {
 			throw new IOException("file "+resourcePath+" not exist!");
 		}
 		return getInputStreamByPath(getProcessPath(resourcePath),FileUtils.openInputStream(file));
-
 	}
 
 	@Override
