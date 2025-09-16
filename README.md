@@ -2,13 +2,15 @@ GenericFileDB
 =========
 [![Build Status](https://github.com/robinhood-jim/GenericFileDB/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/robinhood-jim/GenericFileDB/actions)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
+<br>
+![structure](resources/structure.png)
 
 Common Generic DataFile DB  V1.0
-Aim to ingest kind of dataFile (file format including csv/json/xml/arvo/orc/parquet/protobuf/apache arrow) 
-and Filter/group and order those kind of data using plain sql without flush datas to any Database or hadoop filesystem.
+Aim to ingest kind of unstructured or half structure source (format including csv/json/xml/arvo/orc/parquet/protobuf/apache arrow) 
+and add SQL Capacity and ETL Capacity without flush datas to any Database or hadoop filesystem.
 Data file can ingest from local/hdfs/ApacheVfs/AWS s3/google cloud storage/minio/Aliyun/tencent cos/baidu BOS/huawei OBS and etc.
 Files less than 4G bytes can process without flush to tmp path. large than 4G orc/parquet/arrow binary file must be download first.
-
+Now only support one file SQL filtering,later will support multiple files with MapReduce 
 
 ## Prerequisites
 - Java 11+ above.
