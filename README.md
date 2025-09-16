@@ -3,8 +3,9 @@ GenericFileDB
 [![Build Status](https://github.com/robinhood-jim/GenericFileDB/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/robinhood-jim/GenericFileDB/actions)
 ![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)
 <br>
-![structure](https://github.com/robinhood-jim/GenericFileDB/raw/resources/structure.png)
+![structure](https://github.com/robinhood-jim/GenericFileDB/blob/develop/resources/structure.png?raw=type)
 
+<br>
 Common Generic DataFile DB  V1.0
 Aim to ingest kind of unstructured or half structure source (format including csv/json/xml/arvo/orc/parquet/protobuf/apache arrow) 
 and add SQL Capacity and ETL Capacity without flush datas to any Database or hadoop filesystem.
