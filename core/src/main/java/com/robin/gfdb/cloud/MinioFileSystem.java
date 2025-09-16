@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.util.List;
 
 /**
  * Minio FileSystemAccessor,must init individual
@@ -85,7 +86,7 @@ public class MinioFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected synchronized OutputStream getOutputStream(String path) throws IOException {
+    protected synchronized OutputStream putObject(String path) throws IOException {
         return new MinioOutputStream(new CustomMinioClient(client), colmeta,bucketName,path,region);
     }
 
@@ -112,6 +113,11 @@ public class MinioFileSystem extends AbstractCloudStorageFileSystem {
         if(httpClient!=null){
             httpClient.dispatcher().executorService().shutdown();
         }
+    }
+
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        return null;
     }
 
     @Override

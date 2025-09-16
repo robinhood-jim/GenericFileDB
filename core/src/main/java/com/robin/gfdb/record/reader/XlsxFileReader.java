@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-public class XlsxFileReader extends AbstractFileReader{
+public class XlsxFileReader extends AbstractFileReader implements IDataFileReader{
 
     private Iterator<Map<String,Object>> rowIterator;
     ExcelSheetProp sheetProp;

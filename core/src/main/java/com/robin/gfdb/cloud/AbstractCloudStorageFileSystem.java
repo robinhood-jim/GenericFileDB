@@ -10,7 +10,6 @@ import org.apache.flink.core.memory.MemorySegment;
 import org.springframework.util.ObjectUtils;
 
 import java.io.*;
-import java.util.List;
 
 /**
  * Cloud Storage FileSystemAccessor Abstract super class,not singleton,must init individual
@@ -35,18 +34,18 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
 
     @Override
     public synchronized Pair<BufferedWriter, OutputStream> getOutResourceByWriter(String resourcePath) throws IOException {
-        OutputStream outputStream = getOutputStream(resourcePath);
+        OutputStream outputStream = putObject(resourcePath);
         return Pair.of(getWriterByPath(resourcePath, outputStream, colmeta.getEncode()), outputStream);
     }
 
     @Override
     public synchronized OutputStream getRawOutputStream(String resourcePath) throws IOException {
-        return getOutputStream(resourcePath);
+        return putObject(resourcePath);
     }
 
     @Override
     public synchronized OutputStream getOutResourceByStream(String resourcePath) throws IOException {
-        return getOutputStreamByPath(resourcePath, getOutputStream(resourcePath));
+        return getOutputStreamByPath(resourcePath, putObject(resourcePath));
     }
 
     @Override
@@ -86,42 +85,15 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
      * @return
      * @throws IOException
      */
-    protected abstract OutputStream getOutputStream(String path) throws IOException;
+    protected abstract OutputStream putObject(String path) throws IOException;
 
 
-    /*protected boolean uploadStorage(String bucketName, DataCollectionMeta meta, OutputStream outputStream) {
-        try {
-            if (!useFileCache) {
-                ByteBufferOutputStream out1=(ByteBufferOutputStream) outputStream;
-                out1.reset();
-                ByteBufferInputStream inputStream = new ByteBufferInputStream(out1.getByteBuffer(),out1.getCount());
-                return putObject(bucketName, meta, inputStream, out1.getCount());
-            } else {
-                outputStream.close();
-                return putObject(bucketName, meta, Files.newInputStream(Paths.get(tmpFilePath)), Files.size(Paths.get(tmpFilePath)));
-            }
-        } catch (IOException ex) {
-            log.error("{}", ex.getMessage());
-        }finally {
-            try {
-                if (!ObjectUtils.isEmpty(outputStream)) {
-                    outputStream.close();
-                }
-            }catch (IOException ex){
 
-            }
-        }
-        return false;
-    }*/
 
-    @Override
-    public List<String> listPath(String sourcePath) throws IOException {
-        return null;
-    }
 
     @Override
     public boolean isDirectory(String sourcePath) throws IOException {
-        return false;
+        throw new IOException("cloud storage can not use this method");
     }
 
     protected String getContentType(DataCollectionMeta meta) {

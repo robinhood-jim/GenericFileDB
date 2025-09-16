@@ -36,12 +36,12 @@ public class HdfsFileSystem extends AbstractFileSystem {
 
 	@Override
 	public List<String> listPath(String sourcePath) throws IOException {
-		return null;
+		return hdfsLocal.get().listFile(sourcePath);
 	}
 
 	@Override
 	public boolean isDirectory(String sourcePath) throws IOException {
-		return false;
+		return hdfsLocal.get().isDirectory(sourcePath);
 	}
 
 	@Override
@@ -148,6 +148,14 @@ public class HdfsFileSystem extends AbstractFileSystem {
 			}
 		}catch (Exception ex){
 			throw new IOException(ex);
+		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		if(hdfsLocal.get()!=null){
+			hdfsLocal.get().close();
+			hdfsLocal.remove();
 		}
 	}
 }

@@ -31,9 +31,7 @@ public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	protected String identifier;
 	protected DataCollectionMeta colmeta;
 	protected Charset charset= StandardCharsets.UTF_8;
-	protected AbstractFileSystem(){
 
-	}
 
 	protected static BufferedReader getReaderByPath(String path, InputStream  in, Charset encode) throws IOException{
 		return new BufferedReader(new InputStreamReader(getInputStreamByPath(path,in),encode));
@@ -41,30 +39,11 @@ public abstract class AbstractFileSystem implements IFileSystem,Closeable {
 	protected static InputStream getInputStreamByPath(String path, InputStream  in) throws IOException{
 		return CompressDecoder.getInputStreamByCompressType(path,in);
 	}
-	protected static BufferedWriter getWriterByPath(String path, OutputStream out, String encode) throws IOException{
-		return new BufferedWriter(new OutputStreamWriter(getOutputStreamByPath(path,out),encode));
-	}
-
-	protected static OutputStream wrapOutputStream(OutputStream outputStream){
-		OutputStream out;
-		if(outputStream instanceof  BufferedOutputStream){
-			out=outputStream;
-		}else{
-			out=new BufferedOutputStream(outputStream);
-		}
-		return out;
-	}
-	protected static InputStream wrapInputStream(InputStream instream){
-		InputStream in;
-		if(instream instanceof  BufferedInputStream){
-			in=instream;
-		}else{
-			in=new BufferedInputStream(instream);
-		}
-		return in;
-	}
 	protected static OutputStream getOutputStreamByPath(String path, OutputStream out) throws IOException{
 		return CompressEncoder.getOutputStreamByCompressType(path,out);
+	}
+	protected static BufferedWriter getWriterByPath(String path, OutputStream out, String encode) throws IOException{
+		return new BufferedWriter(new OutputStreamWriter(getOutputStreamByPath(path,out),encode));
 	}
 
 

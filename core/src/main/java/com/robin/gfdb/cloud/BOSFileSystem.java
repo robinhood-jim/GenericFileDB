@@ -3,9 +3,7 @@ package com.robin.gfdb.cloud;
 import com.baidubce.auth.DefaultBceCredentials;
 import com.baidubce.services.bos.BosClient;
 import com.baidubce.services.bos.BosClientConfiguration;
-import com.baidubce.services.bos.model.BosObject;
-import com.baidubce.services.bos.model.ObjectMetadata;
-import com.baidubce.services.bos.model.PutObjectResponse;
+import com.baidubce.services.bos.model.*;
 import com.robin.core.base.exception.MissingConfigException;
 import com.robin.core.base.util.Const;
 import com.robin.core.base.util.ResourceConst;
@@ -19,6 +17,9 @@ import org.springframework.util.ObjectUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @SuppressWarnings("unused")
@@ -64,6 +65,17 @@ public class BOSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        ListObjectsRequest request=new ListObjectsRequest(bucketName,sourcePath);
+        ListObjectsResponse response= client.listObjects(request);
+        List<String> retList=new ArrayList<>();
+        if(!CollectionUtils.isEmpty(response.getContents())){
+            retList.addAll(response.getContents().stream().map(BosObjectSummary::getKey).collect(Collectors.toList()));
+        }
+        return retList;
+    }
+
+    @Override
     public long getInputStreamSize(String resourcePath) throws IOException {
         if(exists(resourcePath)){
             BosObject object=client.getObject(getBucketName(colmeta),resourcePath);
@@ -95,7 +107,7 @@ public class BOSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected OutputStream getOutputStream(String path) throws IOException {
+    protected OutputStream putObject(String path) throws IOException {
         return new BOSOutputStream(client, colmeta,bucketName, path);
     }
 

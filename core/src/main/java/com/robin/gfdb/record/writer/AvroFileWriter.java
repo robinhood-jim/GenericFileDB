@@ -2,6 +2,7 @@ package com.robin.gfdb.record.writer;
 
 import com.robin.core.base.util.Const;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
+import com.robin.core.fileaccess.util.AvroUtils;
 import com.robin.gfdb.storage.AbstractFileSystem;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -19,7 +20,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 
-public class AvroFileWriter extends AbstractFileWriter{
+public class AvroFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private Schema schema;
     private DatumWriter<GenericRecord> dwriter;
     private DataFileWriter<GenericRecord> fileWriter;
@@ -33,6 +34,7 @@ public class AvroFileWriter extends AbstractFileWriter{
     @Override
     public void initalize() throws IOException {
         super.initalize();
+        schema = AvroUtils.getSchemaFromMeta(colmeta);
         dwriter=new GenericDatumWriter<>(schema);
         fileWriter=new DataFileWriter<>(dwriter);
         Const.CompressType type= getCompressType();

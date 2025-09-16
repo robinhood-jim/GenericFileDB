@@ -24,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.io.*;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -139,8 +140,13 @@ public class COSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected OutputStream getOutputStream(String path) throws IOException {
+    protected OutputStream putObject(String path) throws IOException {
         return new COSOutputStream(cosClient, colmeta,getBucketName(colmeta),path,regionName);
+    }
+
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        return null;
     }
 
     public static class Builder{

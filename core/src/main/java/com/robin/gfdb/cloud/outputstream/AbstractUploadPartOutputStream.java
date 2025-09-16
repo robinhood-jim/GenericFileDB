@@ -71,7 +71,7 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
             guavaExecutor = MoreExecutors.listeningDecorator(executorService);
         }
         if(!useOffHeapForAsync){
-            initHeap();
+            initSingleOffHeap();
         }else {
             initNewPart(0);
         }
@@ -163,6 +163,9 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
                     etag = uploadSingle();
                     doFlush = true;
                 }
+                if(!CollectionUtils.isEmpty(segmentMap)){
+                    segmentMap.entrySet().forEach(entry->entry.getValue().free());
+                }
                 if (ObjectUtils.isEmpty(etag)) {
                     log.error("upload Failed");
                 } else {
@@ -196,7 +199,7 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
     protected String getContentType(DataCollectionMeta meta) {
         return !ObjectUtils.isEmpty(meta.getContent()) && !ObjectUtils.isEmpty(meta.getContent().getContentType()) ? meta.getContent().getContentType() : ResourceConst.DEFAULTCONTENTTYPE;
     }
-    protected void initHeap(){
+    protected void initSingleOffHeap(){
         int initLength = !ObjectUtils.isEmpty(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY))
                 ? Integer.parseInt(meta.getResourceCfgMap().get(ResourceConst.DEFAULTCACHEOFFHEAPSIZEKEY).toString()) : ResourceConst.DEFAULTCACHEOFFHEAPSIZE;
         segment = MemorySegmentFactory.allocateOffHeapUnsafeMemory(initLength, this, new Thread() {
@@ -221,6 +224,11 @@ public abstract class AbstractUploadPartOutputStream extends OutputStream {
 
     protected abstract void uploadAsync(WeakReference<byte[]> writeBytesRef, int partNumber, int byteSize) throws IOException;
     protected abstract void uploadAsync(ByteBuffer buffer,MemorySegment segment, int partNumber, int byteSize) throws IOException;
+    protected void freeMemorySegment(MemorySegment segment){
+        if(segment!=null){
+            segment.free();
+        }
+    }
 
     protected abstract String completeMultiUpload() throws IOException;
 

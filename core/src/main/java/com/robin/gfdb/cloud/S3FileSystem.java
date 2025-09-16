@@ -17,10 +17,15 @@ import org.springframework.util.ObjectUtils;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Amazon AWS FileSystemAccessor
@@ -84,7 +89,7 @@ public class S3FileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected synchronized OutputStream getOutputStream(String path) throws IOException {
+    protected synchronized OutputStream putObject(String path) throws IOException {
         return new S3OutputStream(client, colmeta,getBucketName(colmeta),path);
     }
 
@@ -93,6 +98,15 @@ public class S3FileSystem extends AbstractCloudStorageFileSystem {
         return AwsUtils.getObject(client,bucketName,objectName);
     }
 
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        ListObjectsRequest request=ListObjectsRequest.builder().bucket(bucketName).prefix(sourcePath).build();
+        ListObjectsResponse response= client.listObjects(request);
+        if(!CollectionUtils.isEmpty(response.contents())){
+            return response.contents().stream().map(S3Object::key).collect(Collectors.toList());
+        }
+        return null;
+    }
 
     public static class Builder{
         private S3FileSystem accessor;

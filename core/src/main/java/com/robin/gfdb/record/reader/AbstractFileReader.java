@@ -2,31 +2,29 @@ package com.robin.gfdb.record.reader;
 
 import com.robin.core.base.exception.MissingConfigException;
 import com.robin.core.base.util.Const;
+import com.robin.core.base.util.IOUtils;
 import com.robin.core.base.util.ResourceConst;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
 import com.robin.core.fileaccess.meta.DataSetColumnMeta;
-import com.robin.gfdb.sql.calculate.Calculator;
 import com.robin.gfdb.sql.filter.CommRecordFilter;
 import com.robin.gfdb.sql.parser.CommSqlParser;
 import com.robin.gfdb.sql.parser.SqlSegment;
 import com.robin.gfdb.storage.AbstractFileSystem;
-import com.robin.gfdb.storage.ApacheVfsFileSystem;
 import com.robin.gfdb.utils.arithmetic.PolandNotationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -51,6 +49,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected String defaultNewColumnPrefix = "N_COLUMN";
     protected Iterator<Map.Entry<String,Map<String,Object>>> groupIter;
     protected Map<String,Map<String,Object>> groupByMap=new ConcurrentHashMap<>();
+    protected List<String> columnNames=new ArrayList<>();
 
     public AbstractFileReader(DataCollectionMeta colmeta,AbstractFileSystem fileSystem){
         this.colmeta=colmeta;
@@ -60,6 +59,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
             if (Const.META_TYPE_FORMULA.equals(meta.getColumnType())) {
                 meta.setColumnType(Const.META_TYPE_DOUBLE);
             }
+            columnNames.add(meta.getColumnName());
         }
         if (!CollectionUtils.isEmpty(colmeta.getResourceCfgMap()) && !ObjectUtils.isEmpty(colmeta.getResourceCfgMap().get(ResourceConst.STORAGEFILTERSQL))) {
             withFilterSql(colmeta.getResourceCfgMap().get(ResourceConst.STORAGEFILTERSQL).toString());
@@ -144,14 +144,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     public void setIdentifier(String identifier){
         this.identifier=identifier;
     }
-    @Override
-    public void afterProcess() throws IOException {
-        try {
-            close();
-        } catch (IOException ex) {
-            log.error("{}", ex.getMessage());
-        }
-    }
+
     public void withFilterSql(String filterSql) {
         this.filterSql = filterSql;
         segment = CommSqlParser.parseSingleTableQuerySql(filterSql, Lex.MYSQL, colmeta, defaultNewColumnPrefix);
@@ -162,7 +155,6 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected void groupOrderByInit() throws Exception{
         if(useOrderBy || useGroupBy){
             //pool all record through OffHeap
-            //ByteBuffer buffer=ByteBuffer.allocate(512);
             pullNext();
             StringBuilder builder=new StringBuilder();
             while (!CollectionUtils.isEmpty(cachedValue)){
@@ -219,6 +211,14 @@ public abstract class AbstractFileReader implements IDataFileReader{
         }
         return aliasName;
     }
+    protected void copyToLocal(File tmpFile, InputStream stream) {
+        try (FileOutputStream outputStream = new FileOutputStream(tmpFile)) {
+            IOUtils.copyBytes(stream, outputStream, 8192);
+        } catch (IOException ex) {
+            log.error("{}", ex.getMessage());
+        }
+    }
+
 
     public Map<String, DataSetColumnMeta> getColumnMap() {
         return columnMap;
@@ -226,5 +226,9 @@ public abstract class AbstractFileReader implements IDataFileReader{
 
     public SqlSegment getSegment() {
         return segment;
+    }
+
+    public List<String> getColumnNames() {
+        return columnNames;
     }
 }

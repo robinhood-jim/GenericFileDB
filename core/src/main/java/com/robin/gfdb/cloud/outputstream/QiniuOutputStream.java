@@ -48,7 +48,7 @@ public class QiniuOutputStream extends AbstractUploadPartOutputStream {
         this.auth = auth;
         this.manager = manager;
         log.info("using urlPrefix {}", urlPrefix);
-        initHeap();
+        initSingleOffHeap();
     }
 
 

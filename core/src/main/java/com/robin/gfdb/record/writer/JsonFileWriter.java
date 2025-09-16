@@ -9,7 +9,7 @@ import org.tukaani.xz.FinishableOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-public class JsonFileWriter extends AbstractFileWriter{
+public class JsonFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private JsonWriter jwriter=null;
     protected JsonFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);

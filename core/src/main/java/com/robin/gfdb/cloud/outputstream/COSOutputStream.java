@@ -125,6 +125,8 @@ public class COSOutputStream extends AbstractUploadPartOutputStream {
                     return true;
                 } catch (Exception ex) {
                     throw new IOException(ex);
+                }finally {
+                    freeMemorySegment(segment);
                 }
             }
         }));

@@ -118,6 +118,11 @@ public class GCSFileSystem extends AbstractCloudStorageFileSystem {
         }
     }
 
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        return null;
+    }
+
     public static class Builder{
         private GCSFileSystem accessor;
         public static S3FileSystem.Builder builder(){
@@ -153,7 +158,7 @@ public class GCSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected OutputStream getOutputStream(String path) throws IOException {
+    protected OutputStream putObject(String path) throws IOException {
         OutputStream outputStream;
         if (!ObjectUtils.isEmpty(colmeta.getResourceCfgMap().get(ResourceConst.USETMPFILETAG)) && "true".equalsIgnoreCase(colmeta.getResourceCfgMap().get(ResourceConst.USETMPFILETAG).toString())) {
             String tmpPath = com.robin.core.base.util.FileUtils.getWorkingPath(colmeta);

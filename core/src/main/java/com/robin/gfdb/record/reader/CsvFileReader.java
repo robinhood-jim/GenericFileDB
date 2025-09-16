@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
-public class CsvFileReader extends AbstractFileReader{
+public class CsvFileReader extends AbstractFileReader implements IDataFileReader{
     protected String readLineStr = null;
     protected String split = ",";
 

@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class AvroFileReader extends AbstractFileReader{
+public class AvroFileReader extends AbstractFileReader implements IDataFileReader{
     private Schema schema;
     private FileReader<GenericRecord> fileReader;
     private MemorySegment segment;
@@ -79,16 +79,16 @@ public class AvroFileReader extends AbstractFileReader{
                 input=new SeekableFileInput(new File(colmeta.getPath()));
             }
         }
-        GenericDatumReader<GenericRecord> dreader = new GenericDatumReader<>(schema);
-        fileReader = new DataFileReader<>(input, dreader);
-    }
-    protected void copyToLocal(File tmpFile, InputStream stream) {
-        try (FileOutputStream outputStream = new FileOutputStream(tmpFile)) {
-            com.robin.core.base.util.IOUtils.copyBytes(stream, outputStream, 8192);
-        } catch (IOException ex) {
-            log.error("{}", ex.getMessage());
+        if(schema!=null) {
+            GenericDatumReader<GenericRecord> dreader = new GenericDatumReader<>(schema);
+            fileReader = new DataFileReader<>(input, dreader);
+        }else {
+            GenericDatumReader<GenericRecord> dreader = new GenericDatumReader<>();
+            fileReader=new DataFileReader<>(input,dreader);
+            schema=fileReader.getSchema();
         }
     }
+
     @Override
     public Map<String, Object> pullNext() {
         try{

@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.List;
 
 
 /**
@@ -116,6 +117,12 @@ public class QiniuFileSystem extends AbstractCloudStorageFileSystem {
         }
         return 0L;
     }
+
+    @Override
+    public List<String> listPath(String sourcePath) throws IOException {
+        return null;
+    }
+
     @Override
     protected boolean putObject(String bucketName, DataCollectionMeta meta, InputStream inputStream,long size) throws IOException {
         String token=auth.uploadToken(bucketName,meta.getPath());
@@ -125,7 +132,7 @@ public class QiniuFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
-    protected synchronized OutputStream getOutputStream(String path) throws IOException {
+    protected synchronized OutputStream putObject(String path) throws IOException {
         return new QiniuOutputStream(client,uploadManager, colmeta,auth,getBucketName(colmeta),path,urlPrefix);
     }
 

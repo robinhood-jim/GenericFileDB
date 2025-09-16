@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
-public class JsonFileReader extends AbstractFileReader{
+public class JsonFileReader extends AbstractFileReader implements IDataFileReader{
     private JsonReader jreader=null;
     public JsonFileReader(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
