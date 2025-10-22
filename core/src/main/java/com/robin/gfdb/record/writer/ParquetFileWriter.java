@@ -47,7 +47,7 @@ public class ParquetFileWriter extends AbstractFileWriter implements IDataFileWr
     private CompressionCodecName codecName;
     ProtoBufUtil.ProtoContainer container;
 
-    protected ParquetFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public ParquetFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.PARQUET.getValue());
         useRawOutputStream=true;
@@ -89,6 +89,7 @@ public class ParquetFileWriter extends AbstractFileWriter implements IDataFileWr
                 protoWriter= ProtoParquetWriter.<DynamicMessage>builder(outputFile).withMessage(DynamicMessage.class).withCompressionCodec(codecName).withDescriptor(container.getMsgDesc()).withWriteMode(org.apache.parquet.hadoop.ParquetFileWriter.Mode.OVERWRITE).build();
             }
             else {
+                //mapWriter=ExampleParquetWriter.builder(new Path(colmeta.getPath())).withType(messageType).build();
                 mapWriter =new CustomParquetWriter.Builder(new Path(colmeta.getPath()), messageType).withConf(conf).withPageSize(pageSize).withCompressionCodec(codecName).withDictionaryEncoding(false).withWriterVersion(writerVersion).build();
             }
         }else{

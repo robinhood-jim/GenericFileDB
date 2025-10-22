@@ -2,6 +2,7 @@ package com.robin.gfdb.record.reader;
 
 import com.robin.core.base.exception.MissingConfigException;
 import com.robin.core.base.util.Const;
+import com.robin.core.base.util.FileUtils;
 import com.robin.core.base.util.IOUtils;
 import com.robin.core.base.util.ResourceConst;
 import com.robin.core.fileaccess.meta.DataCollectionMeta;
@@ -26,6 +27,7 @@ import java.io.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class AbstractFileReader implements IDataFileReader{
@@ -38,9 +40,9 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected Map<String, Object> newRecord = new ConcurrentHashMap<>();
     protected Map<String, DataSetColumnMeta> columnMap = new HashMap<>();
     protected DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    //if using BufferedReader as input.only csv json format must set this to true
+    //if using BufferedReader as input.only csv format must set this to true
     protected boolean useBufferedReader=false;
-    protected boolean useRawInputStream=false;
+    protected boolean useRawInputStream=true;
     protected boolean useOrderBy=false;
     protected boolean useGroupBy=false;
     private  boolean useFilter=false;
@@ -50,6 +52,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
     protected Iterator<Map.Entry<String,Map<String,Object>>> groupIter;
     protected Map<String,Map<String,Object>> groupByMap=new ConcurrentHashMap<>();
     protected List<String> columnNames=new ArrayList<>();
+    protected boolean partJob=false;
 
     public AbstractFileReader(DataCollectionMeta colmeta,AbstractFileSystem fileSystem){
         this.colmeta=colmeta;
@@ -98,14 +101,15 @@ public abstract class AbstractFileReader implements IDataFileReader{
             // no order by
             if(!useOrderBy && !useGroupBy) {
                 pullNext();
-                while (!CollectionUtils.isEmpty(cachedValue) && useFilter && !CommRecordFilter.doesRecordAcceptable(segment, cachedValue)) {
+                newRecord.clear();
+                while (!CollectionUtils.isEmpty(cachedValue) && useFilter && !CommRecordFilter.doesRecordAcceptable(segment, cachedValue,newRecord)) {
                     pullNext();
+                    newRecord.clear();
                 }
                 if(CollectionUtils.isEmpty(cachedValue)){
                     return false;
                 }
                 if (segment != null && (!segment.isIncludeAllOriginColumn() && !CollectionUtils.isEmpty(segment.getSelectColumns()))) {
-                    newRecord.clear();
                     CommRecordFilter.doAsyncCalculator(segment, cachedValue, newRecord);
                 }
                 return !CollectionUtils.isEmpty(cachedValue);
@@ -117,7 +121,7 @@ public abstract class AbstractFileReader implements IDataFileReader{
                 newRecord.clear();
                 if(groupIter.hasNext()) {
                     newRecord.putAll(groupIter.next().getValue());
-                    if(!CollectionUtils.isEmpty(segment.getHaving())) {
+                    if(!CollectionUtils.isEmpty(segment.getHaving()) && !partJob) {
                         Number baseVal=(Number)((SqlLiteral)((SqlBasicCall)segment.getHavingCause()).getOperandList().get(1)).getValue();
                         while (!CommRecordFilter.cmpNumber(segment.getHavingCause().getKind(),(Number) newRecord.get(getHavingColumnName()),baseVal)){
                             newRecord.clear();
@@ -154,17 +158,23 @@ public abstract class AbstractFileReader implements IDataFileReader{
     }
     protected void groupOrderByInit() throws Exception{
         if(useOrderBy || useGroupBy){
+            Set<String> existKeys=new HashSet<>();
             //pool all record through OffHeap
             pullNext();
+
             StringBuilder builder=new StringBuilder();
             while (!CollectionUtils.isEmpty(cachedValue)){
-                while (!CollectionUtils.isEmpty(cachedValue) && useFilter && !CommRecordFilter.doesRecordAcceptable(segment, cachedValue)) {
+                newRecord.clear();
+                while (!CollectionUtils.isEmpty(cachedValue) && useFilter && !CommRecordFilter.doesRecordAcceptable(segment, cachedValue,newRecord)) {
                     pullNext();
+                    newRecord.clear();
                 }
                 if (segment != null && (!segment.isIncludeAllOriginColumn() && !CollectionUtils.isEmpty(segment.getSelectColumns()))) {
-                    newRecord.clear();
                     if(!CollectionUtils.isEmpty(cachedValue)) {
                         CommRecordFilter.doAsyncCalculator(segment, cachedValue, newRecord);
+                        if(existKeys.isEmpty()){
+                            existKeys.addAll(newRecord.keySet());
+                        }
                     }
                 }
                 //get group by column
@@ -183,20 +193,38 @@ public abstract class AbstractFileReader implements IDataFileReader{
                 pullNext();
             }
             //calculate avg
+            final List<String> outPutColumns=segment.getSelectColumns().stream().map(f->!ObjectUtils.isEmpty(f.getAliasName())?f.getAliasName():f.getIdentifyColumn()).collect(Collectors.toList());
+            log.debug("outputColumns :"+outPutColumns);
+            existKeys.removeAll(outPutColumns);
+            log.debug("remove column "+existKeys);
+            List<String> avgColumns=new ArrayList<>();
             for(CommSqlParser.ValueParts parts:segment.getSelectColumns()){
-                if("avg".equalsIgnoreCase(parts.getFunctionName())){
-                    groupByMap.entrySet().forEach(entry->{
-                        if(!ObjectUtils.isEmpty(entry.getValue().get(parts.getAliasName())) &&
-                                !ObjectUtils.isEmpty(entry.getValue().get(parts.getAliasName()+"cou"))){
-                            entry.getValue().put(parts.getAliasName(),(Double)entry.getValue().get(parts.getAliasName())/(Integer)entry.getValue().get(parts.getAliasName()+"cou"));
-                            entry.getValue().remove(parts.getAliasName()+"cou");
+                if("avg".equalsIgnoreCase(parts.getFunctionName()) && !partJob){
+                    avgColumns.add(parts.getAliasName());
+                }
+            }
+            if(!CollectionUtils.isEmpty(avgColumns) || !CollectionUtils.isEmpty(existKeys)) {
+                Iterator<Map.Entry<String,Map<String,Object>>> iterator=groupByMap.entrySet().iterator();
+                while(iterator.hasNext()){
+                    Map.Entry<String,Map<String,Object>> entry=iterator.next();
+                    if(!CollectionUtils.isEmpty(avgColumns)) {
+                        for(int i=0;i<avgColumns.size();i++) {
+                            if (!ObjectUtils.isEmpty(entry.getValue().get(avgColumns.get(i))) &&
+                                    !ObjectUtils.isEmpty(entry.getValue().get(avgColumns.get(i) + "cou"))) {
+                                entry.getValue().put(avgColumns.get(i), (Double) entry.getValue().get(avgColumns.get(i)) / (Integer) entry.getValue().get(avgColumns.get(i) + "cou"));
+                                entry.getValue().remove(avgColumns.get(i) + "cou");
+                            }
                         }
-                    });
+                    }
+                    if(!CollectionUtils.isEmpty(existKeys)){
+                        for(String removeKey:existKeys){
+                            entry.getValue().remove(removeKey);
+                        }
+                    }
                 }
             }
             groupIter=groupByMap.entrySet().iterator();
-            System.out.println(groupByMap);
-            log.info("",groupByMap);
+            log.debug("resultMap {}",groupByMap);
         }
     }
     private String getHavingColumnName(){
@@ -218,6 +246,9 @@ public abstract class AbstractFileReader implements IDataFileReader{
             log.error("{}", ex.getMessage());
         }
     }
+    public void setDateTimeFormat(String formatStr){
+        formatter=DateTimeFormatter.ofPattern(formatStr);
+    }
 
 
     public Map<String, DataSetColumnMeta> getColumnMap() {
@@ -231,4 +262,22 @@ public abstract class AbstractFileReader implements IDataFileReader{
     public List<String> getColumnNames() {
         return columnNames;
     }
+    public List<DataSetColumnMeta> getCalculatedSchema(){
+        if(!useFilter){
+            return colmeta.getColumnList();
+        }else{
+            return segment.getCalculateSchema();
+        }
+    }
+    protected Const.CompressType getCompressType(){
+        if(ObjectUtils.isEmpty(colmeta.getContent())) {
+            FileUtils.FileContent content = FileUtils.parseFile(colmeta.getPath());
+            colmeta.setContent(content);
+        }
+        return colmeta.getContent().getCompressType();
+    }
+    public void setPartJob(){
+        partJob=true;
+    }
+
 }

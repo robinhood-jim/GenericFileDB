@@ -158,4 +158,9 @@ public class HdfsFileSystem extends AbstractFileSystem {
 			hdfsLocal.remove();
 		}
 	}
+
+	@Override
+	public String listOne(String sourcePath) throws IOException {
+		return hdfsLocal.get().listOne(sourcePath);
+	}
 }

@@ -7,6 +7,7 @@ import com.robin.gfdb.sql.parser.SqlSegment;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
+import org.springframework.util.CollectionUtils;
 import stormpot.Poolable;
 import stormpot.Slot;
 
@@ -27,31 +28,26 @@ public class Calculator implements Closeable, Poolable {
     private CommSqlParser.ValueParts valueParts;
     private Map<String,Object> inputRecord;
     private Map<String,Object> outputRecord;
-    private StringBuilder builder;
+    private StringBuilder builder=new StringBuilder();
     private Map<String,String> stringLiteralMap=new WeakHashMap<>();
     protected boolean busyTag=false;
     private Slot slot;
     private FieldValueVisitor visitor;
 
-
-
-    public Calculator(){
-        visitor=new FieldValueVisitor(this);
-    }
     public Calculator(Slot slot){
         this.slot=slot;
         visitor=new FieldValueVisitor(this);
     }
-    public boolean doCompare(SqlNode node){
-        SqlFunctions.doCompare(segment,this,node);
+    public boolean doCompare(SqlNode node,CalculatorPool pool){
+        SqlFunctions.doCompare(segment,this,node,pool);
         return runValue;
     }
     public boolean doCalculate(){
         return visitor.doCalculate()!=null;
         //return SqlFunctions.doCalculate(this,valueParts);
     }
-    public boolean walkTree(SqlNode node){
-        return SqlFunctions.walkTree(segment,this,node);
+    public boolean walkTree(SqlNode node,CalculatorPool pool){
+        return SqlFunctions.walkTree(segment,this,node,pool);
     }
     public void clear(){
         leftValue=null;
@@ -68,10 +64,15 @@ public class Calculator implements Closeable, Poolable {
         rightValue=null;
         runValue=null;
         columnName=null;
-        inputRecord.clear();
-        outputRecord.clear();
-        inputRecord=null;
-        outputRecord=null;
+        if(!CollectionUtils.isEmpty(inputRecord)) {
+            inputRecord.clear();
+            inputRecord=null;
+        }
+        if(!CollectionUtils.isEmpty(outputRecord)) {
+            outputRecord.clear();
+            outputRecord=null;
+        }
+        stringLiteralMap.clear();
         segment=null;
         valueParts=null;
         setBusyTag(false);
@@ -93,5 +94,15 @@ public class Calculator implements Closeable, Poolable {
     public void release() {
         setBusyTag(false);
         slot.release(this);
+    }
+    public void CopyTo(Calculator other){
+        other.setValueParts(valueParts);
+        other.setCmpColumn(cmpColumn);
+        other.setInputRecord(inputRecord);
+        other.setOutputRecord(outputRecord);
+        other.setStringLiteralMap(stringLiteralMap);
+        if(this.builder.length()>0){
+            other.builder.append(this.builder);
+        }
     }
 }

@@ -39,7 +39,7 @@ public class OrcFileWriter extends AbstractFileWriter implements IDataFileWriter
     public static final String BACTH_SIZE="orcWrite.batchSize";
     FileSystem fs;
 
-    protected OrcFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public OrcFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.ORC.getValue());
     }

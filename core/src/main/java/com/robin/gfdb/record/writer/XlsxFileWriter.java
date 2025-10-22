@@ -20,7 +20,7 @@ public class XlsxFileWriter extends AbstractFileWriter implements IDataFileWrite
     WorkSheet currentSheet;
     int sheetNum;
 
-    protected XlsxFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public XlsxFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.XLSX.getValue());
     }

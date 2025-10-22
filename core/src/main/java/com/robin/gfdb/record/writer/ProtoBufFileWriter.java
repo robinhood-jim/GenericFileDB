@@ -15,7 +15,7 @@ import java.util.Map;
 public class ProtoBufFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private ProtoBufUtil.ProtoContainer container;
 
-    protected ProtoBufFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public ProtoBufFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.PROTOBUF.getValue());
         useRawOutputStream=true;

@@ -161,6 +161,33 @@ public class ApacheVfsFileSystem extends AbstractFileSystem {
         return list;
     }
 
+    @Override
+    public String listOne(String sourcePath) throws IOException {
+        VfsParam param = new VfsParam();
+        try {
+            ConvertUtil.convertToTarget(param, colmeta.getResourceCfgMap());
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+        String filePath=null;
+        try(FileObject fo=manager.resolveFile(getUriByParam(param, sourcePath).toString(), getOptions(param))){
+            if (FileType.FOLDER.equals(fo.getType())) {
+                FileObject[] object = fo.getChildren();
+                if (!ObjectUtils.isEmpty(object)) {
+                    for (FileObject fileObject : object) {
+                        if (!FileType.FOLDER.equals(fileObject.getType())) {
+                            filePath=sourcePath.endsWith("/")?sourcePath+fileObject.getName().getBaseName():sourcePath+"/"+fileObject.getName().getBaseName();
+                            break;
+                        }
+                    }
+                }
+            }
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return filePath;
+    }
+
     public FileObject createNotExists(DataCollectionMeta meta, String resourcePath) throws Exception {
         VfsParam param = new VfsParam();
         ConvertUtil.convertToTarget(param, meta.getResourceCfgMap());

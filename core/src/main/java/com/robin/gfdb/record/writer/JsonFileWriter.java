@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class JsonFileWriter extends AbstractFileWriter implements IDataFileWriter{
     private JsonWriter jwriter=null;
-    protected JsonFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public JsonFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.JSON.getValue());
         useBufferedWriter=true;

@@ -14,10 +14,11 @@ public class CvsFileWriter extends AbstractFileWriter implements IDataFileWriter
     private List<String> retList=null;
     private String split=",";
 
-    protected CvsFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public CvsFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.CSV.getValue());
         useBufferedWriter =true;
+        useRawOutputStream=false;
     }
 
     @Override

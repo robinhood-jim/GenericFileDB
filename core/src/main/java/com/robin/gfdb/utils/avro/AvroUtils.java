@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -201,15 +202,15 @@ public class AvroUtils {
                 List list = (List) valueObj;
                 if (!CollectionUtils.isEmpty(list)) {
                     Class<?> targetClazz = list.get(0).getClass();
-                    Map<String, Method> setMap = ReflectUtils.returnSetMethods(targetClazz);
+                    Map<String, MethodHandle> setMap = ReflectUtils.returnSetMethodHandle(targetClazz);
                     if (grecord.getSchema().getType().equals(Schema.Type.ARRAY)) {
                         List<GenericRecord> flist = (List<GenericRecord>) grecord.get(0);
                         for (GenericRecord g : flist) {
                             Object t = targetClazz.newInstance();
-                            for (Map.Entry<String, Method> entry : setMap.entrySet()) {
+                            for (Map.Entry<String, MethodHandle> entry : setMap.entrySet()) {
                                 if (g.get(entry.getKey()) != null) {
                                     Schema eleType = schema.getField(entry.getKey()).schema().getTypes().get(0).getElementType();
-                                    entry.getValue().invoke(t, acquireGenericRecord(entry.getKey(), g.get(entry.getKey()), eleType));
+                                    entry.getValue().bindTo(t).invoke(acquireGenericRecord(entry.getKey(), g.get(entry.getKey()), eleType));
                                 }
                             }
                             list.add(t);
@@ -231,7 +232,7 @@ public class AvroUtils {
             } else if (valueObj.getClass().isAssignableFrom(Serializable.class)) {
                 acquireModel(grecord, valueObj);
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
 
         }
     }
@@ -245,12 +246,12 @@ public class AvroUtils {
                     if (CollectionUtils.isEmpty(list)) {
                         return null;
                     }
-                    Map<String, Method> getMethods = ReflectUtils.returnGetMethods(list.get(0).getClass());
+                    Map<String, MethodHandle> getMethods = ReflectUtils.returnGetMethodHandle(list.get(0).getClass());
                     Schema eleType = schema.getField(key).schema().getTypes().get(0).getElementType();
                     for (Object t : list) {
                         GenericRecord grecord = new GenericData.Record(eleType);
-                        for (Map.Entry<String, Method> entry : getMethods.entrySet()) {
-                            grecord.put(entry.getKey(), acquireGenericRecord(entry.getKey(), entry.getValue().invoke(t, null), eleType));
+                        for (Map.Entry<String, MethodHandle> entry : getMethods.entrySet()) {
+                            grecord.put(entry.getKey(), acquireGenericRecord(entry.getKey(), entry.getValue().bindTo(t).invoke(null), eleType));
                         }
                         records.add(grecord);
                     }
@@ -285,50 +286,45 @@ public class AvroUtils {
                     return value;
                 } else {
                     GenericRecord record = new GenericData.Record(schema);
-                    Map<String, Method> getMethods = ReflectUtils.returnGetMethods(value.getClass());
-                    for (Map.Entry<String, Method> entry : getMethods.entrySet()) {
+                    Map<String, MethodHandle> getMethods = ReflectUtils.returnGetMethodHandle(value.getClass());
+                    for (Map.Entry<String, MethodHandle> entry : getMethods.entrySet()) {
                         if (schema.getField(entry.getKey()) != null) {
-                            record.put(entry.getKey(), acquireGenericRecord(entry.getKey(), entry.getValue().invoke(value, null), schema.getField(entry.getKey()).schema()));
+                            record.put(entry.getKey(), acquireGenericRecord(entry.getKey(), entry.getValue().bindTo(value).invoke(), schema.getField(entry.getKey()).schema()));
                         }
                     }
                     return record;
                 }
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ex.printStackTrace();
         }
         return null;
     }
 
-    public static void acquireModel(GenericRecord genericRecord, Object targetObj) throws Exception {
+    public static void acquireModel(GenericRecord genericRecord, Object targetObj) throws Throwable {
         List<Schema.Field> fields = genericRecord.getSchema().getFields();
-        Map<String, Method> setMap = ReflectUtils.returnSetMethods(targetObj.getClass());
+        Map<String, MethodHandle> setMap = ReflectUtils.returnSetMethodHandle(targetObj.getClass());
         for (Schema.Field field : fields) {
 
             if ((field.schema().getType().equals(Schema.Type.UNION) && field.schema().getTypes().get(0).getType().equals(Schema.Type.LONG)) || field.schema().getType().equals(Schema.Type.LONG)) {
                 Long val = (Long) genericRecord.get(field.name());
-                if (setMap.get(field.name()).getParameterTypes()[0].isAssignableFrom(Date.class)) {
-                    setMap.get(field.name()).invoke(targetObj, new Date(val));
-                } else if (setMap.get(field.name()).getParameterTypes()[0].isAssignableFrom(Timestamp.class)) {
-                    setMap.get(field.name()).invoke(targetObj, new Timestamp(val));
-                } else if (setMap.get(field.name()).getParameterTypes()[0].isAssignableFrom(LocalDateTime.class)) {
-                    setMap.get(field.name()).invoke(targetObj, LocalDateTime.ofInstant(Instant.ofEpochMilli(val), ZoneId.systemDefault()));
-                } else if (setMap.get(field.name()).getParameterTypes()[0].isAssignableFrom(Long.class)) {
-                    setMap.get(field.name()).invoke(targetObj, val);
+                if (setMap.get(field.name()).type().parameterType(1).isAssignableFrom(Date.class)) {
+                    setMap.get(field.name()).bindTo(targetObj).invoke(new Date(val));
+                } else if (setMap.get(field.name()).type().parameterType(1).isAssignableFrom(Timestamp.class)) {
+                    setMap.get(field.name()).bindTo(targetObj).invoke(new Timestamp(val));
+                } else if (setMap.get(field.name()).type().parameterType(1).isAssignableFrom(LocalDateTime.class)) {
+                    setMap.get(field.name()).bindTo(targetObj).invoke(LocalDateTime.ofInstant(Instant.ofEpochMilli(val), ZoneId.systemDefault()));
+                } else if (setMap.get(field.name()).type().parameterType(1).isAssignableFrom(Long.class)) {
+                    setMap.get(field.name()).bindTo(targetObj).invoke(val);
                 }
             } else if (field.schema().getType().equals(Schema.Type.RECORD)) {
-                Object vobj = setMap.get(field.name()).getParameterTypes()[0].newInstance();
+                Object vobj = setMap.get(field.name()).type().parameterType(1).newInstance();
                 acquireModel((GenericRecord) genericRecord.get(field.name()), vobj);
-                setMap.get(field.name()).invoke(targetObj, vobj);
+                setMap.get(field.name()).bindTo(targetObj).invoke(vobj);
             } else if (field.schema().getTypes().get(0).getType().equals(Schema.Type.MAP)) {
-                Type[] genericClazzs = ((ParameterizedType) setMap.get(field.name()).getGenericParameterTypes()[0]).getActualTypeArguments();
-                /*if (!genericClazzs[1].getTypeName().endsWith(".Object")) {
 
-                } else {
-
-                }*/
             } else if (!ObjectUtils.isEmpty(field.schema().getTypes()) && field.schema().getTypes().get(0).getType().equals(Schema.Type.ARRAY)) {
-                Type genericClazz = ((ParameterizedType) setMap.get(field.name()).getGenericParameterTypes()[0]).getActualTypeArguments()[0];
+                Type genericClazz = setMap.get(field.name()).type().parameterType(1).getGenericSuperclass();
                 List<Object> list = new ArrayList<>();
                 List<GenericRecord> records = (List<GenericRecord>) genericRecord.get(field.name());
                 if (!CollectionUtils.isEmpty(records)) {
@@ -338,12 +334,12 @@ public class AvroUtils {
                         list.add(vobj);
                     }
                 }
-                setMap.get(field.name()).invoke(targetObj, list);
+                setMap.get(field.name()).bindTo(targetObj).invoke(list);
             } else {
                 if (field.schema().getTypes().get(0).getType().equals(Schema.Type.STRING)) {
-                    setMap.get(field.name()).invoke(targetObj, genericRecord.get(field.name()).toString());
+                    setMap.get(field.name()).bindTo(targetObj).invoke(genericRecord.get(field.name()).toString());
                 } else {
-                    setMap.get(field.name()).invoke(targetObj, genericRecord.get(field.name()));
+                    setMap.get(field.name()).bindTo(targetObj).invoke(genericRecord.get(field.name()));
                 }
             }
         }

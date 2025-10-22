@@ -17,7 +17,7 @@ import java.util.*;
 
 @Slf4j
 public class SqlFunctions {
-    public static void doCompare(SqlSegment segment, Calculator calculator, SqlNode node) {
+    public static void doCompare(SqlSegment segment, Calculator calculator, SqlNode node,CalculatorPool pool) {
         calculator.setRunValue(false);
         switch (node.getKind()) {
             case GREATER_THAN:
@@ -29,8 +29,8 @@ public class SqlFunctions {
                 List<SqlNode> nodes = ((SqlBasicCall) node).getOperandList();
                 segment.getNodeStringMap().computeIfAbsent(nodes.get(0).hashCode(), code -> nodes.get(0).toString());
                 segment.getNodeStringMap().computeIfAbsent(nodes.get(1).hashCode(), code -> nodes.get(1).toString());
-                getValueBySide(calculator, nodes.get(0), segment.getNodeStringMap().get(nodes.get(0).hashCode()), true);
-                getValueBySide(calculator, nodes.get(1), segment.getNodeStringMap().get(nodes.get(1).hashCode()), false);
+                getValueBySide(calculator, nodes.get(0), segment.getNodeStringMap().get(nodes.get(0).hashCode()), true,pool);
+                getValueBySide(calculator, nodes.get(1), segment.getNodeStringMap().get(nodes.get(1).hashCode()), false,pool);
                 if (!ObjectUtils.isEmpty(calculator.getLeftValue()) && !ObjectUtils.isEmpty(calculator.getRightValue())) {
                     if (NumberUtil.isNumber(calculator.getLeftValue().toString())) {
                         Assert.isTrue(NumberUtil.isNumber(calculator.getLeftValue().toString()) && NumberUtil.isNumber(calculator.getRightValue().toString()), " only number allowed");
@@ -93,29 +93,29 @@ public class SqlFunctions {
                 calculator.setRunValue(SqlKind.IS_NOT_NULL.equals(node.getKind()) ? calculator.getRunValue() : !calculator.getRunValue());
                 break;
             case NOT:
-                calculator.setRunValue(!walkTree(segment, calculator, ((SqlBasicCall) node).getOperandList().get(0)));
+                calculator.setRunValue(!walkTree(segment, calculator, ((SqlBasicCall) node).getOperandList().get(0),pool));
                 break;
             default:
-                throw new OperationNotSupportException("can not handle this opertator " + node.getKind());
+                throw new OperationNotSupportException("can not handle this operator " + node.getKind());
         }
     }
 
-    public static boolean walkTree(SqlSegment segment, Calculator ca, SqlNode node) {
+    public static boolean walkTree(SqlSegment segment, Calculator ca, SqlNode node,CalculatorPool pool) {
         boolean cmpOkFlag = false;
         List<SqlNode> childNodes = ((SqlBasicCall) node).getOperandList();
         if (SqlBasicCall.class.isAssignableFrom(node.getClass()) && (SqlKind.AND.equals(node.getKind()) || SqlKind.OR.equals(node.getKind()))) {
             if (childNodes.size() == 2 && !SqlKind.AND.equals(childNodes.get(1).getKind()) && !SqlKind.OR.equals(childNodes.get(1).getKind())) {
-                cmpOkFlag = walkTree(segment, ca, childNodes.get(1));
+                cmpOkFlag = walkTree(segment, ca, childNodes.get(1),pool);
                 if (SqlKind.AND.equals(node.getKind()) && !cmpOkFlag) {
                     return false;
                 }
                 if (SqlKind.OR.equals(node.getKind()) && cmpOkFlag) {
                     return true;
                 }
-                cmpOkFlag = walkTree(segment, ca, childNodes.get(0));
+                cmpOkFlag = walkTree(segment, ca, childNodes.get(0),pool);
             } else {
                 for (SqlNode node1 : childNodes) {
-                    cmpOkFlag = walkTree(segment, ca, node1);
+                    cmpOkFlag = walkTree(segment, ca, node1,pool);
                     if (SqlKind.AND.equals(node.getKind()) && !cmpOkFlag) {
                         return false;
                     }
@@ -125,7 +125,7 @@ public class SqlFunctions {
                 }
             }
         } else {
-            doCompare(segment, ca, node);
+            doCompare(segment, ca, node,pool);
             cmpOkFlag = ca.getRunValue();
         }
         return cmpOkFlag;
@@ -461,6 +461,9 @@ public class SqlFunctions {
             case NOT:
                 fit = doValueCompare(segment, ((SqlBasicCall) node).getOperandList().get(1), leftValue, rightValue);
                 break;
+            case CONTAINS:
+                fit=leftValue.toString().contains(rightValue.toString());
+                break;
             default:
                 throw new OperationNotSupportException("can not handle this opertator " + node.getKind());
 
@@ -468,33 +471,48 @@ public class SqlFunctions {
         return fit;
     }
 
-    private static void getValueBySide(Calculator calculator, SqlNode nodes, String nodeString, boolean leftTag) {
-        if (SqlBasicCall.class.isAssignableFrom(nodes.getClass())) {
-            if (leftTag) {
-                calculator.setLeftValue(calculator.getVisitor().doCalculate(nodes));//PolandNotationUtil.computeResult(queue, calculator.getInputRecord())
-            } else {
-                calculator.setRightValue(calculator.getVisitor().doCalculate(nodes));//PolandNotationUtil.computeResult(queue, calculator.getInputRecord())
-            }
-        } else if (SqlKind.LITERAL.equals(nodes.getKind())) {
-            if (leftTag) {
-                if (SqlCharStringLiteral.class.isAssignableFrom(nodes.getClass())) {
-                    calculator.setLeftValue(calculator.getStringLiteralMap().computeIfAbsent(nodeString, k -> nodeString.replace("'", "")));
+    private static void getValueBySide(Calculator calculator, SqlNode nodes, String nodeString, boolean leftTag,CalculatorPool pool) {
+        Calculator newCal=null;
+        try {
+            if (SqlBasicCall.class.isAssignableFrom(nodes.getClass())) {
+                newCal=pool.borrowObject();
+                calculator.CopyTo(newCal);
+                if (leftTag) {
+                    calculator.setLeftValue(newCal.getVisitor().doCalculate(nodes));//PolandNotationUtil.computeResult(queue, calculator.getInputRecord())
                 } else {
-                    calculator.setRightValue(((SqlLiteral) nodes).getValue());
+                    calculator.setRightValue(newCal.getVisitor().doCalculate(nodes));//PolandNotationUtil.computeResult(queue, calculator.getInputRecord())
                 }
-            } else {
-                if (SqlCharStringLiteral.class.isAssignableFrom(nodes.getClass())) {
-                    calculator.setRightValue(calculator.getStringLiteralMap().computeIfAbsent(nodeString, k -> nodeString.replace("'", "")));
+            } else if (SqlKind.LITERAL.equals(nodes.getKind())) {
+                if (leftTag) {
+                    if (SqlCharStringLiteral.class.isAssignableFrom(nodes.getClass())) {
+                        calculator.setLeftValue(calculator.getStringLiteralMap().computeIfAbsent(nodeString, k -> nodeString.replace("'", "")));
+                    } else {
+                        calculator.setRightValue(((SqlLiteral) nodes).getValue());
+                    }
                 } else {
-                    calculator.setRightValue(((SqlLiteral) nodes).getValue());
+                    if (SqlCharStringLiteral.class.isAssignableFrom(nodes.getClass())) {
+                        calculator.setRightValue(calculator.getStringLiteralMap().computeIfAbsent(nodeString, k -> nodeString.replace("'", "")));
+                    } else {
+                        calculator.setRightValue(((SqlLiteral) nodes).getValue());
+                    }
+                }
+            } else if (SqlIdentifier.class.isAssignableFrom(nodes.getClass()) && calculator.getInputRecord().containsKey(nodeString)) {
+                if (leftTag) {
+                    calculator.setLeftValue(calculator.getInputRecord().get(nodeString));
+                } else {
+                    calculator.setRightValue(calculator.getInputRecord().get(nodeString));
                 }
             }
-        } else if (SqlIdentifier.class.isAssignableFrom(nodes.getClass()) && calculator.getInputRecord().containsKey(nodeString)) {
-            if (leftTag) {
-                calculator.setLeftValue(calculator.getInputRecord().get(nodeString));
-            } else {
-                calculator.setRightValue(calculator.getInputRecord().get(nodeString));
+        }finally {
+            if(leftTag && calculator.getLeftValue()!=null && newCal!=null){
+                calculator.getOutputRecord().put(nodeString, calculator.getLeftValue());
+            }else if(calculator.getRightValue()!=null && newCal!=null){
+                calculator.getOutputRecord().put(nodeString,calculator.getRightValue());
             }
+            if(newCal!=null){
+                pool.returnObject(newCal);
+            }
+
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.robin.gfdb.sql.parser;
 
 import com.robin.gfdb.sql.calculate.Calculator;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.util.SqlVisitor;
 import org.springframework.util.Assert;
@@ -10,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-
+@Slf4j
 public class FieldValueVisitor implements SqlVisitor<Object> {
 
     private SqlSegment segment;
@@ -44,6 +45,11 @@ public class FieldValueVisitor implements SqlVisitor<Object> {
     public Object visit(SqlCall selected) {
         SqlNode processNode=selected;
         CommSqlParser.ValueParts parts=ca.getValueParts();
+        if(parts!=null && ca.getOutputRecord().containsKey(parts.getNodeString()) && ca.getOutputRecord().get(parts.getNodeString())!=null){
+            //log.debug("getValue from select "+parts.getNodeString()+" with value " +ca.getOutputRecord().get(parts.getNodeString()));
+            ca.setLeftValue(ca.getOutputRecord().get(parts.getNodeString()));
+            return ca.getLeftValue();
+        }
         if (SqlKind.AS.equals(selected.getKind())) {
             List<SqlNode> columnNodes = selected.getOperandList();
             parts.setAliasName(columnNodes.get(1).toString());

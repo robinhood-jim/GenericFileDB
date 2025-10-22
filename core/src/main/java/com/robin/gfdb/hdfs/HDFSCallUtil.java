@@ -297,6 +297,26 @@ public class HDFSCallUtil {
         }
         return hdfsUrlList;
     }
+    public static String listOne(final Configuration config, String hdfsUrl) throws HdfsException {
+        String onePath=null;
+        try {
+            FileSystem fs = FileSystem.get(config);
+            Path path = new Path(hdfsUrl);
+            FileStatus[] status = fs.listStatus(path);
+            Path[] listPaths = FileUtil.stat2Paths(status);
+            for (Path listPath : listPaths) {
+                if (!listPath.toString().endsWith("_SUCCESS")) {
+                    onePath=listPath.toString();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("", e);
+            throw new HdfsException(e);
+        }
+        return onePath;
+    }
 
     public static void rmdirs(final Configuration config, String relativeName) throws HdfsException {
         try {

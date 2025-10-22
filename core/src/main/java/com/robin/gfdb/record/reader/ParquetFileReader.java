@@ -11,10 +11,14 @@ import com.robin.core.fileaccess.util.ResourceUtil;
 import com.robin.gfdb.hdfs.HDFSUtil;
 import com.robin.gfdb.record.utils.*;
 import com.robin.gfdb.storage.AbstractFileSystem;
+import com.robin.gfdb.utils.SysUtils;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.calcite.sql.*;
+import org.apache.commons.io.IOUtils;
+import org.apache.flink.core.memory.MemorySegment;
+import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -24,6 +28,7 @@ import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.InputFile;
+import org.apache.parquet.io.LocalInputFile;
 import org.apache.parquet.proto.ProtoParquetReader;
 import org.apache.parquet.proto.ProtoReadSupport;
 import org.apache.parquet.schema.MessageType;
@@ -31,7 +36,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +67,9 @@ public class ParquetFileReader extends AbstractFileReader implements IDataFileRe
     FilterCompat.Filter filter;
     GenericData.Record record;
     DynamicMessage message;
-
+    private MemorySegment memorySegment;
+    private File tmpFile;
+    private Double allowOffHeapDumpLimit = ResourceConst.ALLOWOUFHEAPMEMLIMIT;
 
     @Override
     public void init() throws IOException {
@@ -96,8 +111,59 @@ public class ParquetFileReader extends AbstractFileReader implements IDataFileRe
                 }
                 ireader = builder.build();
             }
-        }else if(Const.FILESYSTEM.LOCAL.getValue().equals(colmeta.getFsType())){
+        }else {
+            if(Const.FILESYSTEM.LOCAL.getValue().equals(colmeta.getFsType())){
+                file = new LocalInputFile(Paths.get(colmeta.getPath()));
+            }
+            else {
+                inputStream = fileSystem.getRawInputStream(ResourceUtil.getProcessPath(colmeta.getPath()));
+                long size = fileSystem.getInputStreamSize(ResourceUtil.getProcessPath(colmeta.getPath()));
+                Double freeMemory = SysUtils.getFreeMemory();
+                //file size too large ,can not store in ByteBuffer or freeMemory too low
+                if (size >= ResourceConst.MAX_ARRAY_SIZE  || freeMemory < allowOffHeapDumpLimit) {
+                    String tmpPath = com.robin.core.base.util.FileUtils.getWorkingPath(colmeta);
+                    String tmpFilePath = "file:///" + tmpPath + ResourceUtil.getProcessFileName(colmeta.getPath());
+                    try {
+                        tmpFile = new File(new URL(tmpFilePath).toURI());
+                        copyToLocal(tmpFile, inputStream);
+                        file = new LocalInputFile(Paths.get(new URI(tmpFilePath)));
+                    }catch (URISyntaxException ex1){
 
+                    }
+                } else {
+                    //use flink memory utils to use offHeapMemory to dump file content
+                    memorySegment = MemorySegmentFactory.allocateOffHeapUnsafeMemory((int) size, this, new Thread() {
+                    });
+                    ByteBuffer byteBuffer = memorySegment.getOffHeapBuffer();
+                    try (ReadableByteChannel channel = Channels.newChannel(inputStream)) {
+                        IOUtils.readFully(channel, byteBuffer);
+                        byteBuffer.position(0);
+                        ByteBufferSeekableInputStream seekableInputStream = new ByteBufferSeekableInputStream(byteBuffer);
+                        file = ParquetUtil.makeInputFile(seekableInputStream);
+                    }
+                }
+            }
+            if (useAvroEncode) {
+                ParquetReader.Builder<GenericData.Record> builder = AvroParquetReader.builder(file);
+                if (filter != null) {
+                    builder.withFilter(filter);
+                }
+                preader = builder.build();
+            }else if(useProtoBuffEncode){
+                ParquetReader.Builder<DynamicMessage.Builder> builder=ProtoParquetReader.builder(file);
+                builder.set(ProtoReadSupport.PB_CLASS,DynamicMessage.class.getName()).set(ProtoReadSupport.PB_DESCRIPTOR,container.getSchema().toString());
+                if (filter != null) {
+                    builder.withFilter(filter);
+                }
+                protoReader=builder.build();
+            }
+            else {
+                ParquetReader.Builder builder = CustomParquetReader.builder(file, colmeta);
+                if (filter != null) {
+                    builder.withFilter(filter);
+                }
+                ireader = builder.build();
+            }
         }
 
     }

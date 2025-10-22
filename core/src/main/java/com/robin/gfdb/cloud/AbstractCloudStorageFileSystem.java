@@ -87,9 +87,10 @@ public abstract class AbstractCloudStorageFileSystem extends AbstractFileSystem 
      */
     protected abstract OutputStream putObject(String path) throws IOException;
 
-
-
-
+    @Override
+    public String listOne(String sourcePath) throws IOException {
+        return listPath(sourcePath).get(0);
+    }
 
     @Override
     public boolean isDirectory(String sourcePath) throws IOException {

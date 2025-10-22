@@ -62,5 +62,6 @@ public interface IFileSystem {
     void init(DataCollectionMeta meta);
     String getIdentifier();
     List<String> listPath(String sourcePath) throws IOException;
+    String listOne(String sourcePath) throws IOException;
     boolean isDirectory(String sourcePath) throws IOException;
 }

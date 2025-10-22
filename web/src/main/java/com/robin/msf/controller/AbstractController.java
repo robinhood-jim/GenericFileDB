@@ -10,13 +10,16 @@ import com.robin.core.query.util.PageQuery;
 import com.robin.gfdb.core.service.AbstractService;
 import com.robin.msf.bean.ApplicationContextHolder;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.inject.qualifiers.Qualifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.ObjectUtils;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -36,7 +39,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
     protected static final String COL_SUCCESS="success";
     protected static final String COL_COED="code";
     protected static final String COL_DATA="data";
-    protected Method valueOfMethod;
+    protected MethodHandle valueOfMethod;
 
     protected AbstractController(){
         Type genericSuperClass = getClass().getGenericSuperclass();
@@ -54,11 +57,15 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
         this.voType = ((Class) parametrizedType.getActualTypeArguments()[0]);
         this.pkType = ((Class) parametrizedType.getActualTypeArguments()[1]);
         try {
+            MethodHandles.Lookup lookup=MethodHandles.publicLookup().in(voType);
             if(!pkType.isAssignableFrom(String.class)) {
-                valueOfMethod = this.pkType.getMethod("valueOf", String.class);
+                valueOfMethod = lookup.unreflect(this.pkType.getMethod("valueOf", String.class));
             }
             if (this.serviceType != null) {
                 this.service= ApplicationContextHolder.getBean(serviceType);
+                if(this.service==null){
+                    this.service=ApplicationContextHolder.getBean(serviceType, Qualifiers.byName(serviceType.getSimpleName()));
+                }
             }
         } catch (Exception ex) {
             log.error("{0}", ex);
@@ -220,7 +227,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
             for (int i = 0; i < idsArr.length; i++) {
                 if (valueOfMethod != null) {
                     P p = pkType.newInstance();
-                    valueOfMethod.invoke(p, idsArr[i]);
+                    valueOfMethod.bindTo(p).invoke(idsArr[i]);
                     array[i]=p;
                 }else{
                     array[i]=(P)idsArr[i];
@@ -229,6 +236,8 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
             }
         } catch (Exception ex) {
             throw new ServiceException(ex);
+        }catch (Throwable ex1){
+            throw new ServiceException(ex1);
         }
         return array;
     }
@@ -300,7 +309,7 @@ public abstract class AbstractController <O extends BaseObject, P extends Serial
         PageQuery query = new PageQuery();
         try
         {
-            ConvertUtil.mapToObject(query, paramMap);
+            ConvertUtil.mapToObject(paramMap,query);
         }
         catch (Exception ex)
         {

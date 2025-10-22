@@ -76,6 +76,16 @@ public class BOSFileSystem extends AbstractCloudStorageFileSystem {
     }
 
     @Override
+    public String listOne(String sourcePath) throws IOException {
+        ListObjectsRequest request=new ListObjectsRequest(bucketName,sourcePath);
+        ListObjectsResponse response= client.listObjects(request);
+        if(!CollectionUtils.isEmpty(response.getContents())){
+            return  sourcePath.endsWith("/")? sourcePath+response.getContents().get(0).getKey():sourcePath+"/"+response.getContents().get(0).getKey();
+        }
+        return null;
+    }
+
+    @Override
     public long getInputStreamSize(String resourcePath) throws IOException {
         if(exists(resourcePath)){
             BosObject object=client.getObject(getBucketName(colmeta),resourcePath);

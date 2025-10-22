@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.InputMismatchException;
+import java.util.List;
 
 
 public class ParquetUtil {
@@ -330,12 +331,16 @@ public class ParquetUtil {
             }
         };
     }
-
-    public static MessageType genSchema(DataCollectionMeta colmeta) {
+    public static MessageType genSchema(DataCollectionMeta colmeta){
         Assert.notNull(colmeta, "datacollectionMeta is null");
         Assert.isTrue(!CollectionUtils.isEmpty(colmeta.getColumnList()), "columns is null");
+        return genSchema(colmeta.getColumnList(), colmeta.getValueClassName());
+    }
+
+    public static MessageType genSchema(List<DataSetColumnMeta> columnMetaList,String valueClassName) {
+
         Types.MessageTypeBuilder builder = Types.buildMessage();
-        for (DataSetColumnMeta columnMeta : colmeta.getColumnList()) {
+        for (DataSetColumnMeta columnMeta : columnMetaList) {
             switch (columnMeta.getColumnType()) {
                 case Const.META_TYPE_SHORT:
                     builder.optional(PrimitiveType.PrimitiveTypeName.INT32).as(OriginalType.INT_16).named(columnMeta.getColumnName());
@@ -369,7 +374,7 @@ public class ParquetUtil {
                     throw new InputMismatchException("input type not support!");
             }
         }
-        MessageType type=builder.named(colmeta.getValueClassName());
+        MessageType type=builder.named(valueClassName);
         return type;
     }
 }

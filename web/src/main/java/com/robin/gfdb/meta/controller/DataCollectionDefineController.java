@@ -54,7 +54,7 @@ public class DataCollectionDefineController extends AbstractController<DataColle
             FileStorageDefine storageDefine = storageDefineService.getEntity(define.getStorageId());
             Assert.notNull(storageDefine, "storage id not found");
             Map<String, Object> retMap = new HashMap<>();
-            ConvertUtil.mapToObject(define, retMap);
+            ConvertUtil.mapToObject(retMap,define);
             retMap.put("storageType",storageDefine.getStorageType());
             retMap.put("storageParam",gson.fromJson(storageDefine.getConfigParam(),new TypeToken<Map<String,Object>>(){}.getType()));
             return retMap;

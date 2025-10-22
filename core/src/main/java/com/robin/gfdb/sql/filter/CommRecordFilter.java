@@ -34,7 +34,7 @@ public class CommRecordFilter {
         pool= MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(20));
     }
 
-    public static boolean doesRecordAcceptable(SqlSegment segment, Map<String, Object> inputRecord) {
+    public static boolean doesRecordAcceptable(SqlSegment segment, Map<String, Object> inputRecord,Map<String,Object> outputRecord) {
         SqlNode whereNode = segment.getWhereCause();
         if (CollectionUtils.isEmpty(segment.getWherePartsMap())) {
             segment.setWherePartsMap(segment.getWhereColumns().stream().collect(Collectors.toMap(CommSqlParser.ValueParts::getNodeString, Function.identity())));
@@ -44,7 +44,8 @@ public class CommRecordFilter {
             calculator=caPool.borrowObject();
             calculator.setSegment(segment);
             calculator.setInputRecord(inputRecord);
-            return calculator.walkTree(whereNode);
+            calculator.setOutputRecord(outputRecord);
+            return calculator.walkTree(whereNode,caPool);
         }catch (Exception ex){
             log.error("{}",ex.getMessage());
         }finally {
@@ -62,7 +63,6 @@ public class CommRecordFilter {
      * @throws Exception
      */
     public static void doAsyncCalculator(SqlSegment segment,Map<String,Object> inputRecord,Map<String,Object> newRecord) throws Exception{
-        newRecord.clear();
         List<ListenableFuture<Boolean>> futures=new ArrayList<>();
         try {
             Map<Integer,Throwable> exMap=new HashMap<>();

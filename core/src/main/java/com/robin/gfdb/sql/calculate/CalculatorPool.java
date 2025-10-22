@@ -16,9 +16,7 @@ public class CalculatorPool implements Closeable {
     private CalculatorAllocator allocator;
     public CalculatorPool(){
         allocator=new CalculatorAllocator();
-        //Config<Calculator> config = new Config<Calculator>().setSize(40).setAllocator(allocator);
         pool = Pool.from(allocator).setSize(40).build();
-
     }
     public void close() {
         pool.shutdown();

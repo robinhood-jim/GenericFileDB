@@ -16,7 +16,7 @@ public class XmlFileWriter extends AbstractFileWriter{
     XMLOutputFactory factory;
     XMLEventFactory ef = XMLEventFactory.newInstance();
     XMLStreamWriter streamWriter;
-    protected XmlFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
+    public XmlFileWriter(DataCollectionMeta colmeta, AbstractFileSystem fileSystem) {
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.XML.getValue());
         useBufferedWriter=true;

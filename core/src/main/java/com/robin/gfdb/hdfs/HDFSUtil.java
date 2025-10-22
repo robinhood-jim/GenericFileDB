@@ -153,6 +153,14 @@ public class HDFSUtil {
             return  HDFSSecurityUtil.executeSecurityWithProxy(config, f->HDFSCallUtil.listFile(config,hdfsUrl));
         }
 	}
+	public String listOne(String hdfsUrl) throws HdfsException{
+		Assert.notNull(config,"configuration is null");
+		if(!useSecurity) {
+			return HDFSCallUtil.listOne(config, hdfsUrl);
+		} else {
+			return  HDFSSecurityUtil.executeSecurityWithProxy(config, f->HDFSCallUtil.listOne(config,hdfsUrl));
+		}
+	}
 	public  List<Map<String,String>> listFileAndDirectory(String hdfsUrl) throws HdfsException{
 		if(!useSecurity) {
             return HDFSCallUtil.listFileAndDirectory(config, hdfsUrl);

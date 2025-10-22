@@ -22,6 +22,7 @@ public class CsvFileReader extends AbstractFileReader implements IDataFileReader
         super(colmeta, fileSystem);
         setIdentifier(Const.FILEFORMATSTR.CSV.getValue());
         useBufferedReader=true;
+        useRawInputStream=false;
     }
 
     @Override

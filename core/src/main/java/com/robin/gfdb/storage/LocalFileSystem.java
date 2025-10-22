@@ -109,7 +109,21 @@ public class LocalFileSystem extends AbstractFileSystem {
 
 	@Override
 	public List<String> listPath(String sourcePath) {
-		return FileUtil.listFileNames(sourcePath);
+		if(FileUtil.isDirectory(sourcePath)) {
+			return FileUtil.listFileNames(sourcePath);
+		}
+		return null;
+	}
+
+	@Override
+	public String listOne(String sourcePath) throws IOException {
+		if(FileUtil.isDirectory(new File(sourcePath))){
+			File[] files=FileUtil.ls(sourcePath);
+			if(files!=null && files.length>0){
+				return files[0].getPath();
+			}
+		}
+		return null;
 	}
 
 	@Override

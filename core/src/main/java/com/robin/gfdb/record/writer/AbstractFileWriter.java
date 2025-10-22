@@ -30,7 +30,7 @@ public abstract class AbstractFileWriter implements IDataFileWriter {
     protected AbstractFileSystem fileSystem;
     protected String identifier;
     protected boolean useBufferedWriter =false;
-    protected boolean useRawOutputStream=false;
+    protected boolean useRawOutputStream=true;
     protected AbstractFileWriter(DataCollectionMeta colmeta,AbstractFileSystem fileSystem){
         this.colmeta=colmeta;
         formatter=DateTimeFormatter.ofPattern(colmeta.getDefaultTimestampFormat());

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Spliterator;
 
 public interface IDataFileReader extends Closeable,Iterator<Map<String,Object>> {
 
@@ -11,5 +12,6 @@ public interface IDataFileReader extends Closeable,Iterator<Map<String,Object>> 
     void init() throws IOException;
     String getIdentifier();
     Map<String,Object> pullNext();
+
 
 }
